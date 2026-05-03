@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { DINOBOTS } from '../data/gameData';
-import { useLang } from '../data/LangContext';
-import DinoBot from '../components/DinoBot';
-import WinScreen from '../components/WinScreen';
+import React, { useState, useCallback, useEffect } from "react";
+import { DINOBOTS } from "../data/gameData";
+import { useLang } from "../data/LangContext";
+import DinoBot from "../components/DinoBot";
+import WinScreen from "../components/WinScreen";
+import { publicUrl } from "../assets/url";
 
 interface Props {
   onComplete: (s: number) => void;
@@ -19,39 +20,39 @@ type PuzzleDef = {
 
 const PUZZLES: PuzzleDef[] = [
   {
-    nameDE: 'Grimlock',
-    nameBS: 'Grimlock',
-    image: '/images/Grimlock.webp',
-    bgColor: '#0f1b12',
-    borderColor: '#22c55e',
+    nameDE: "Grimlock",
+    nameBS: "Grimlock",
+    image: publicUrl("images/Grimlock.webp"),
+    bgColor: "#0f1b12",
+    borderColor: "#22c55e",
   },
   {
-    nameDE: 'Optimus',
-    nameBS: 'Optimus',
-    image: '/images/optimus-pose.jpg',
-    bgColor: '#0f172a',
-    borderColor: '#4ecdc4',
+    nameDE: "Optimus",
+    nameBS: "Optimus",
+    image: publicUrl("images/optimus-pose.jpg"),
+    bgColor: "#0f172a",
+    borderColor: "#4ecdc4",
   },
   {
-    nameDE: 'T-Rex Vulkan',
-    nameBS: 'T-Rex Vulkan',
-    image: '/images/trex-volcano.jpg',
-    bgColor: '#1f0f0f',
-    borderColor: '#ff6b35',
+    nameDE: "T-Rex Vulkan",
+    nameBS: "T-Rex Vulkan",
+    image: publicUrl("images/trex-volcano.jpg"),
+    bgColor: "#1f0f0f",
+    borderColor: "#ff6b35",
   },
   {
-    nameDE: 'Bumblebee',
-    nameBS: 'Bumblebee',
-    image: '/images/bumblebee1.jpg',
-    bgColor: '#14110a',
-    borderColor: '#a855f7',
+    nameDE: "Bumblebee",
+    nameBS: "Bumblebee",
+    image: publicUrl("images/bumblebee1.jpg"),
+    bgColor: "#14110a",
+    borderColor: "#a855f7",
   },
 ];
 
 type PuzzleState = {
   puzzle: PuzzleDef;
-  slots: (number | null)[]; // slot i expects tile i
-  remaining: number[]; // tile indices remaining to place
+  slots: (number | null)[];
+  remaining: number[];
   selectedTile: number | null;
 };
 
@@ -77,10 +78,10 @@ function tileImageStyle(tileIdx: number, size: number) {
   return {
     width: size * grid,
     height: size * grid,
-    objectFit: 'cover' as const,
+    objectFit: "cover" as const,
     transform: `translate(${-x * size}px, ${-y * size}px)`,
-    userSelect: 'none' as const,
-    pointerEvents: 'none' as const,
+    userSelect: "none" as const,
+    pointerEvents: "none" as const,
   };
 }
 
@@ -196,24 +197,24 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
   }
 
   const { puzzle, slots, remaining, selectedTile } = state;
-  const puzzleName = lang === 'de' ? puzzle.nameDE : puzzle.nameBS;
+  const puzzleName = lang === "de" ? puzzle.nameDE : puzzle.nameBS;
   const solved = slots.filter((v) => v !== null).length;
 
   const TILE = 76;
 
   return (
-    <div className="screen" style={{ gap: 16, justifyContent: 'flex-start', paddingTop: 20 }}>
+    <div className="screen" style={{ gap: 16, justifyContent: "flex-start", paddingTop: 20 }}>
       {/* Top bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', maxWidth: 600, alignItems: 'center' }}>
-        <button className="btn btn-muted" style={{ padding: '8px 16px', fontSize: '0.9rem' }} onClick={onBack}>
+      <div style={{ display: "flex", justifyContent: "space-between", width: "100%", maxWidth: 600, alignItems: "center" }}>
+        <button className="btn btn-muted" style={{ padding: "8px 16px", fontSize: "0.9rem" }} onClick={onBack}>
           {t.back}
         </button>
 
-        <div style={{ fontFamily: 'Fredoka One,cursive', fontSize: '1.1rem', color: '#ffe66d' }}>
+        <div style={{ fontFamily: "Fredoka One,cursive", fontSize: "1.1rem", color: "#ffe66d" }}>
           {puzzleIdx + 1}/{TOTAL_PUZZLES}
         </div>
 
-        <div style={{ fontSize: '0.95rem', color: '#7a8fa6' }}>{elapsed}s</div>
+        <div style={{ fontSize: "0.95rem", color: "#7a8fa6" }}>{elapsed}s</div>
       </div>
 
       <DinoBot {...dinobot} powerLevel={power} size={70} animate={false} />
@@ -222,26 +223,26 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
       {showPreview && (
         <div
           style={{
-            position: 'fixed',
+            position: "fixed",
             inset: 0,
             zIndex: 100,
-            background: 'rgba(0,0,0,0.85)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
             gap: 20,
             padding: 18,
           }}
         >
-          <div style={{ fontFamily: 'Fredoka One,cursive', fontSize: '1.5rem', color: '#ffe66d', textAlign: 'center' }}>
+          <div style={{ fontFamily: "Fredoka One,cursive", fontSize: "1.5rem", color: "#ffe66d", textAlign: "center" }}>
             {t.puzzle.preview}: {puzzleName}
           </div>
 
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
               gap: 6,
               background: puzzle.bgColor,
               padding: 16,
@@ -256,33 +257,33 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
                   width: TILE,
                   height: TILE,
                   borderRadius: 12,
-                  overflow: 'hidden',
-                  background: 'rgba(255,255,255,0.06)',
+                  overflow: "hidden",
+                  background: "rgba(255,255,255,0.06)",
                   border: `2px solid ${puzzle.borderColor}44`,
                 }}
               >
-                <img src={puzzle.image} alt="preview" style={tileImageStyle(tileIdx, TILE)} />
+                <img src={puzzle.image} alt="preview" style={tileImageStyle(tileIdx, TILE)} draggable={false} />
               </div>
             ))}
           </div>
 
-          <div style={{ color: '#7a8fa6', fontSize: '0.9rem' }} className="pulse">
+          <div style={{ color: "#7a8fa6", fontSize: "0.9rem" }} className="pulse">
             Merke dir das Bild! / Zapamti sliku!
           </div>
         </div>
       )}
 
       {/* Main puzzle area */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: '100%', maxWidth: 600 }}>
-        <div style={{ fontFamily: 'Fredoka One,cursive', fontSize: '1.2rem', color: puzzle.borderColor }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, width: "100%", maxWidth: 600 }}>
+        <div style={{ fontFamily: "Fredoka One,cursive", fontSize: "1.2rem", color: puzzle.borderColor }}>
           {t.puzzle.title} — {puzzleName}
         </div>
-        <p style={{ color: '#7a8fa6', fontSize: '0.85rem', textAlign: 'center' }}>{t.puzzle.hint}</p>
+        <p style={{ color: "#7a8fa6", fontSize: "0.85rem", textAlign: "center" }}>{t.puzzle.hint}</p>
 
         {/* Progress */}
-        <div style={{ width: '100%', maxWidth: 400 }}>
-          <div style={{ fontSize: '0.8rem', color: '#7a8fa6', marginBottom: 4 }}>
-            {solved}/9 {lang === 'de' ? 'Teile platziert' : 'dijelova postavljeno'}
+        <div style={{ width: "100%", maxWidth: 400 }}>
+          <div style={{ fontSize: "0.8rem", color: "#7a8fa6", marginBottom: 4 }}>
+            {solved}/9 {lang === "de" ? "Teile platziert" : "dijelova postavljeno"}
           </div>
           <div className="progress-bar">
             <div className="progress-fill" style={{ width: `${(solved / 9) * 100}%` }} />
@@ -292,8 +293,8 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
         {/* Grid (drop zone) */}
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
             gap: 6,
             background: puzzle.bgColor,
             padding: 14,
@@ -312,28 +313,26 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
                 key={slotIdx}
                 onClick={() => !filled && placeInSlot(slotIdx)}
                 style={{
-                  appearance: 'none',
-                  WebkitAppearance: 'none',
+                  appearance: "none",
+                  WebkitAppearance: "none",
                   width: TILE,
                   height: TILE,
                   borderRadius: 14,
                   padding: 6,
-                  background: isCorrect ? '#22c55e44' : isWrong ? '#ef444444' : filled ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)',
-                  border: `3px solid ${
-                    isCorrect ? '#22c55e' : isWrong ? '#ef4444' : filled ? `${puzzle.borderColor}88` : `${puzzle.borderColor}33`
-                  }`,
-                  cursor: filled ? 'default' : 'pointer',
-                  display: 'grid',
-                  placeItems: 'center',
-                  transition: 'all 0.2s',
-                  boxShadow: isCorrect ? '0 0 16px #22c55e' : isWrong ? '0 0 16px #ef4444' : 'none',
-                  overflow: 'hidden',
+                  background: isCorrect ? "#22c55e44" : isWrong ? "#ef444444" : filled ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.04)",
+                  border: `3px solid ${isCorrect ? "#22c55e" : isWrong ? "#ef4444" : filled ? `${puzzle.borderColor}88` : `${puzzle.borderColor}33`}`,
+                  cursor: filled ? "default" : "pointer",
+                  display: "grid",
+                  placeItems: "center",
+                  transition: "all 0.2s",
+                  boxShadow: isCorrect ? "0 0 16px #22c55e" : isWrong ? "0 0 16px #ef4444" : "none",
+                  overflow: "hidden",
                 }}
               >
                 {filled ? (
-                  <img src={puzzle.image} alt="tile" style={tileImageStyle(tileIdx!, TILE - 12)} />
+                  <img src={puzzle.image} alt="tile" style={tileImageStyle(tileIdx!, TILE - 12)} draggable={false} />
                 ) : (
-                  <div style={{ width: '100%', height: '100%', borderRadius: 12, border: '2px dashed rgba(255,255,255,0.14)' }} />
+                  <div style={{ width: "100%", height: "100%", borderRadius: 12, border: "2px dashed rgba(255,255,255,0.14)" }} />
                 )}
               </button>
             );
@@ -342,21 +341,21 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
 
         {/* Tile bank */}
         {remaining.length > 0 && (
-          <div style={{ width: '100%', maxWidth: 430 }}>
-            <div style={{ fontFamily: 'Fredoka One,cursive', fontSize: '1rem', color: '#7a8fa6', marginBottom: 8, textAlign: 'center' }}>
+          <div style={{ width: "100%", maxWidth: 430 }}>
+            <div style={{ fontFamily: "Fredoka One,cursive", fontSize: "1rem", color: "#7a8fa6", marginBottom: 8, textAlign: "center" }}>
               {t.puzzle.selectPiece}
             </div>
 
             <div
               style={{
-                display: 'flex',
-                flexWrap: 'wrap',
+                display: "flex",
+                flexWrap: "wrap",
                 gap: 10,
-                justifyContent: 'center',
-                background: 'var(--card)',
+                justifyContent: "center",
+                background: "var(--card)",
                 borderRadius: 16,
                 padding: 14,
-                border: '2px solid #2a3a4a',
+                border: "2px solid #2a3a4a",
               }}
             >
               {remaining.map((tileIdx) => (
@@ -364,24 +363,24 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
                   key={tileIdx}
                   onClick={() => selectTile(tileIdx)}
                   style={{
-                    appearance: 'none',
-                    WebkitAppearance: 'none',
+                    appearance: "none",
+                    WebkitAppearance: "none",
                     width: 72,
                     height: 72,
                     borderRadius: 14,
                     padding: 6,
-                    background: selectedTile === tileIdx ? `${puzzle.borderColor}22` : '#1e2d3d',
-                    border: `3px solid ${selectedTile === tileIdx ? puzzle.borderColor : '#2a3a4a'}`,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    transform: selectedTile === tileIdx ? 'scale(1.08)' : 'scale(1)',
-                    boxShadow: selectedTile === tileIdx ? `0 0 14px ${puzzle.borderColor}` : 'none',
-                    overflow: 'hidden',
-                    display: 'grid',
-                    placeItems: 'center',
+                    background: selectedTile === tileIdx ? `${puzzle.borderColor}22` : "#1e2d3d",
+                    border: `3px solid ${selectedTile === tileIdx ? puzzle.borderColor : "#2a3a4a"}`,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    transform: selectedTile === tileIdx ? "scale(1.08)" : "scale(1)",
+                    boxShadow: selectedTile === tileIdx ? `0 0 14px ${puzzle.borderColor}` : "none",
+                    overflow: "hidden",
+                    display: "grid",
+                    placeItems: "center",
                   }}
                 >
-                  <img src={puzzle.image} alt="piece" style={tileImageStyle(tileIdx, 60)} />
+                  <img src={puzzle.image} alt="piece" style={tileImageStyle(tileIdx, 60)} draggable={false} />
                 </button>
               ))}
             </div>
@@ -389,8 +388,8 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
         )}
 
         {remaining.length === 0 && solved < 9 && (
-          <div style={{ color: '#ffe66d', fontFamily: 'Fredoka One,cursive', fontSize: '1.1rem' }}>
-            {lang === 'de' ? 'Fast fertig! Korrigiere die Fehler!' : 'Skoro gotovo! Ispravi greške!'}
+          <div style={{ color: "#ffe66d", fontFamily: "Fredoka One,cursive", fontSize: "1.1rem" }}>
+            {lang === "de" ? "Fast fertig! Korrigiere die Fehler!" : "Skoro gotovo! Ispravi greške!"}
           </div>
         )}
       </div>
