@@ -1,40 +1,39 @@
 // src/assets/images.ts
-// Central place to map all former emoji/icons to local images.
-// NOTE: These paths assume files exist under /public/images.
+import { publicUrl } from "./url";
 
 export const IMAGES = {
   // App/game icons (home screen)
-  letters: '/images/optimus-face.jpg',
-  numbers: '/images/optimus-pose.jpg',
-  shapes: '/images/Grimlock.webp',
-  colors: '/images/trex-volcano.jpg',
-  memory: '/images/bumblebee1.jpg',
-  puzzle: '/images/trex.jpg',
-  counting: '/images/bumblebee2.jpg',
-  patterns: '/images/optimus2.jpg',
-  photoPuzzle: '/images/optimus3.jpg',
-  runner: '/images/optimus-fortnite.jpg',
+  letters: publicUrl("images/optimus-face.jpg"),
+  numbers: publicUrl("images/optimus-pose.jpg"),
+  shapes: publicUrl("images/Grimlock.webp"),
+  colors: publicUrl("images/trex-volcano.jpg"),
+  memory: publicUrl("images/bumblebee1.jpg"),
+  puzzle: publicUrl("images/trex.jpg"),
+  counting: publicUrl("images/bumblebee2.jpg"),
+  patterns: publicUrl("images/optimus2.jpg"),
+  photoPuzzle: publicUrl("images/optimus3.jpg"),
+  runner: publicUrl("images/optimus-fortnite.jpg"),
 
-  // Pattern / memory pool icons (use ONLY existing files)
-  itemA: '/images/optimus-face.jpg',
-  itemB: '/images/optimus-fortnite.jpg',
-  itemC: '/images/optimus-pose.jpg',
-  itemD: '/images/Grimlock.webp',
-  itemE: '/images/dinobot1.webp',
-  itemF: '/images/trex.jpg',
-  itemG: '/images/trex2.jpg',
-  itemH: '/images/trex-volcano.jpg',
+  // Pattern / memory pool icons
+  itemA: publicUrl("images/optimus-face.jpg"),
+  itemB: publicUrl("images/optimus-fortnite.jpg"),
+  itemC: publicUrl("images/optimus-pose.jpg"),
+  itemD: publicUrl("images/Grimlock.webp"),
+  itemE: publicUrl("images/dinobot1.webp"),
+  itemF: publicUrl("images/trex.jpg"),
+  itemG: publicUrl("images/trex2.jpg"),
+  itemH: publicUrl("images/trex-volcano.jpg"),
 
   // Runner sprites
-  optimusRun: '/images/optimus-pose.jpg',
-  optimusJump: '/images/optimus-fortnite.jpg',
-  optimusShoot: '/images/optimus-face.jpg',
-  bot: '/images/Grimlock.webp',
-  wall: '/images/trex.jpg',
-  ufo: '/images/bumblebee3.webp', // placeholder image that exists
+  optimusRun: publicUrl("images/optimus-pose.jpg"),
+  optimusJump: publicUrl("images/optimus-fortnite.jpg"),
+  optimusShoot: publicUrl("images/optimus-face.jpg"),
+  bot: publicUrl("images/Grimlock.webp"),
+  wall: publicUrl("images/trex.jpg"),
+  ufo: publicUrl("images/bumblebee3.webp"),
 
   // Generic UI
-  confetti: '/images/bumblebee3.webp', // placeholder image that exists
+  confetti: publicUrl("images/bumblebee3.webp"),
 } as const;
 
 export const MEMORY_POOL: string[] = [
@@ -49,15 +48,15 @@ export const MEMORY_POOL: string[] = [
 ];
 
 export const PHOTO_POOL: string[] = [
-  '/images/optimus-face.jpg',
-  '/images/optimus-fortnite.jpg',
-  '/images/optimus-pose.jpg',
-  '/images/Grimlock.webp',
-  '/images/dinobot1.webp',
-  '/images/trex.jpg',
-  '/images/trex2.jpg',
-  '/images/trex-volcano.jpg',
-  '/images/bumblebee1.jpg',
-  '/images/bumblebee2.jpg',
-  '/images/bumblebee3.webp',
+  publicUrl("images/optimus-face.jpg"),
+  publicUrl("images/optimus-fortnite.jpg"),
+  publicUrl("images/optimus-pose.jpg"),
+  publicUrl("images/Grimlock.webp"),
+  publicUrl("images/dinobot1.webp"),
+  publicUrl("images/trex.jpg"),
+  publicUrl("images/trex2.jpg"),
+  publicUrl("images/trex-volcano.jpg"),
+  publicUrl("images/bumblebee1.jpg"),
+  publicUrl("images/bumblebee2.jpg"),
+  publicUrl("images/bumblebee3.webp"),
 ];
