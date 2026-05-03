@@ -12,7 +12,7 @@ const WinScreen: React.FC<Props> = ({ stars, dinobot, powerLevel, detail, onBack
         <h2 style={{ fontSize:'2.4rem', color:'#ffe66d', marginBottom:8 }}>{t.missionComplete}</h2>
         <p style={{ color:'#7a8fa6', fontSize:'1rem' }}>{detail}</p>
       </div>
-      <StarRating stars={stars} size="2.6rem" />
+      <StarRating stars={stars} />
       <div style={{ display:'flex', gap:16 }}>
         <button className="btn btn-muted" onClick={onBack}>{t.academy}</button>
         <button className="btn btn-yellow" onClick={onClaim}>{t.claimStars}</button>

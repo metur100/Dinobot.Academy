@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
-import { TRANSLATIONS, Lang, T } from './i18n';
+import { TRANSLATIONS, Lang } from './i18n';
 
-interface Ctx { lang: Lang; setLang: (l: Lang) => void; t: T; }
+interface Ctx { lang: Lang; setLang: (l: Lang) => void; t: typeof TRANSLATIONS[Lang]; }
 
 const LangContext = createContext<Ctx>({ lang: 'de', setLang: () => {}, t: TRANSLATIONS.de });
 
