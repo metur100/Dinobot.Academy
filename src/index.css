@@ -1,3 +1,6 @@
+/* =========================
+   GLOBAL RESET + THEME
+   ========================= */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -11,24 +14,39 @@
   --touch: 56px;
 }
 
+/* =========================
+   SCROLL FIX (IMPORTANT)
+   Make #root the scroller
+   ========================= */
 html, body, #root {
-  height: auto;
-  min-height: 100%;
+  height: 100%;
 }
 
+/* body should NOT scroll (prevents iOS vh/dvh + address bar issues) */
 body {
   font-family: 'Nunito', sans-serif;
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
   font-size: 18px;
+
+  height: 100%;
+  overflow: hidden;          /* key */
+  overflow-x: hidden;
 }
 
-/* Prevent iOS 100vh issues */
-.screen { min-height: 100dvh; }
+/* #root is the ONLY scroll container */
+#root {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 
+  -webkit-overflow-scrolling: touch;      /* iOS momentum scroll */
+  padding-bottom: env(safe-area-inset-bottom); /* iPhone home indicator space */
+}
+
+/* =========================
+   TYPOGRAPHY / CONTROLS
+   ========================= */
 h1, h2, h3 { font-family: 'Fredoka One', cursive; }
 
 button {
@@ -40,15 +58,30 @@ button {
 }
 button:active { transform: scale(0.97); filter: brightness(1.08); }
 
+/* =========================
+   SCREEN LAYOUT
+   IMPORTANT: do NOT use 100vh/100dvh here
+   ========================= */
 .screen {
-  min-height: 100dvh;
+  min-height: 100%;                 /* instead of 100vh/100dvh */
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start; /* <-- FIX: omogucava normalan flow + scroll */
+  justify-content: flex-start;      /* normal flow */
   padding: 20px;
+  gap: 18px;
 }
 
+/* Guaranteed bottom breathing room so last buttons are reachable */
+.screen::after{
+  content:"";
+  display:block;
+  height: 28px;
+}
+
+/* =========================
+   CARDS / BUTTONS / UI
+   ========================= */
 .card {
   background: var(--card);
   border-radius: var(--radius);
@@ -66,6 +99,7 @@ button:active { transform: scale(0.97); filter: brightness(1.08); }
   min-height: var(--touch);
 }
 .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.4); }
+
 .btn-orange  { background: #ff6b35; color: #fff; }
 .btn-teal    { background: #4ecdc4; color: #0d1117; }
 .btn-yellow  { background: #ffe66d; color: #0d1117; }
@@ -77,6 +111,9 @@ button:active { transform: scale(0.97); filter: brightness(1.08); }
 .progress-bar { width:100%; height:14px; background:#1e2d3d; border-radius:99px; overflow:hidden; }
 .progress-fill { height:100%; background:linear-gradient(90deg,#4ecdc4,#ffe66d); border-radius:99px; transition:width 0.5s ease; }
 
+/* =========================
+   ANIMATIONS
+   ========================= */
 @keyframes float  { 0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-14px) rotate(2deg)} }
 @keyframes bounce { 0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)} }
 @keyframes pop    { 0%{transform:scale(0.4);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1} }
@@ -91,14 +128,19 @@ button:active { transform: scale(0.97); filter: brightness(1.08); }
 .spin   { animation: spin   2s linear infinite; }
 .pulse  { animation: pulse  1.5s ease-in-out infinite; }
 
-/* Bigger default text on small devices */
+/* =========================
+   MOBILE TWEAKS
+   ========================= */
 @media (max-width: 600px){
   body{ font-size: 18px; }
   .card{ padding: 18px; }
   .btn{ font-size: 1.1rem; padding: 14px 24px; }
+  .screen{ padding: 16px; }
 }
 
-/* Confetti-like sparkle (simple) */
+/* =========================
+   SPARKLE EFFECT
+   ========================= */
 @keyframes sparkle {
   0%{opacity:0; transform:translateY(10px) scale(0.8)}
   40%{opacity:1}
@@ -107,15 +149,14 @@ button:active { transform: scale(0.97); filter: brightness(1.08); }
 .sparkle{ position:absolute; inset:0; pointer-events:none; }
 .sparkle span{ position:absolute; animation:sparkle 700ms ease-out forwards; }
 
-/* -------------------- */
-/* MEMORY: hard override */
-/* -------------------- */
+/* =========================
+   MEMORY: HARD OVERRIDE
+   ========================= */
 .memoryGrid {
   width: 100%;
 }
 
 .memoryCard {
-  /* reset global button behavior that can shrink/warp */
   appearance: none;
   -webkit-appearance: none;
   width: 100%;
@@ -136,7 +177,7 @@ button:active { transform: scale(0.97); filter: brightness(1.08); }
 }
 
 .memoryCard:active {
-  transform: none;     /* nema “skakanja” */
+  transform: none;
   filter: none;
 }
 

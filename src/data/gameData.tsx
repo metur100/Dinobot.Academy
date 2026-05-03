@@ -1,26 +1,39 @@
 import type { Lang } from './i18n';
+import React from 'react';
 
 export interface Mission {
   id: string;
-  icon: string;
+  icon?: string;      // emoji fallback (optional)
+  image?: string;     // NEW: /images/...
   color: string;
-  game: 'letters' | 'numbers' | 'shapes' | 'colors' | 'memory' | 'puzzle' | 'counting' | 'patterns' | 'photoPuzzle' | 'runner';
+  game:
+    | "letters"
+    | "numbers"
+    | "shapes"
+    | "colors"
+    | "memory"
+    | "puzzle"
+    | "counting"
+    | "patterns"
+    | "photoPuzzle"
+    | "runner";
   stars: number;
   unlocked: boolean;
 }
 
 export const MISSIONS: Mission[] = [
-  { id: 'letters',  icon: '/images/optimus-face.jpg', color: '#ff6b35', game: 'letters',  stars: 0, unlocked: true },
-  { id: 'numbers',  icon: '/images/optimus-pose.jpg', color: '#4ecdc4', game: 'numbers',  stars: 0, unlocked: true },
-  { id: 'shapes',   icon: '/images/Grimlock.webp', color: '#a855f7', game: 'shapes',   stars: 0, unlocked: true },
-  { id: 'colors',   icon: '/images/trex-volcano.jpg', color: '#f97316', game: 'colors',   stars: 0, unlocked: true },
-  { id: 'memory',   icon: '/images/optimus-fortnite.jpg', color: '#22c55e', game: 'memory',   stars: 0, unlocked: true },
-  { id: 'puzzle',   icon: '/images/trex.jpg', color: '#e11d48', game: 'puzzle',   stars: 0, unlocked: true },
-  { id: 'counting', icon: '/images/optimus-face.jpg', color: '#0ea5e9', game: 'counting', stars: 0, unlocked: true },
-  { id: 'patterns', icon: '/images/optimus-pose.jpg', color: '#d97706', game: 'patterns', stars: 0, unlocked: true },
-  { id: 'photoPuzzle', icon: '/images/WS-50093_WP.jpg', color: '#38bdf8', game: 'photoPuzzle', stars: 0, unlocked: true },
-  { id: 'runner',     icon: '/images/wp7683103.jpg', color: '#f43f5e', game: 'runner',     stars: 0, unlocked: true },
+  { id: "letters",  icon: "🔤", image: "/images/optimus-face.jpg",   color: "#ff6b35", game: "letters",  stars: 0, unlocked: true },
+  { id: "numbers",  icon: "🔢", image: "/images/optimus-fortnite.jpg",color: "#4ecdc4", game: "numbers",  stars: 0, unlocked: true },
+  { id: "shapes",   icon: "🔷", image: "/images/trex-volcano.jpg",   color: "#a855f7", game: "shapes",   stars: 0, unlocked: true },
+  { id: "colors",   icon: "🎨", image: "/images/optimus-pose.jpg",   color: "#f97316", game: "colors",   stars: 0, unlocked: true },
+  { id: "memory",   icon: "🧠", image: "/images/optimus-face.jpg",   color: "#22c55e", game: "memory",   stars: 0, unlocked: true },
+  { id: "puzzle",   icon: "🧩", image: "/images/trex.jpg",           color: "#e11d48", game: "puzzle",   stars: 0, unlocked: true },
+  { id: "counting", icon: "🔢", image: "/images/trex-volcano.jpg",   color: "#0ea5e9", game: "counting", stars: 0, unlocked: true },
+  { id: "patterns", icon: "🔁", image: "/images/optimus-pose.jpg",   color: "#d97706", game: "patterns", stars: 0, unlocked: true },
+  { id: "photoPuzzle", icon: "🧩", image: "/images/Grimlock.webp",   color: "#38bdf8", game: "photoPuzzle", stars: 0, unlocked: true },
+  { id: "runner",     icon: "🏃", image: "/images/optimus-pose.jpg", color: "#f43f5e", game: "runner",     stars: 0, unlocked: true },
 ];
+
 
 // -------- Letters --------
 // Existing LettersGame expects WORDS[lang] -> string[]
@@ -54,49 +67,52 @@ export const WORDS_BY_LEVEL: Record<Lang, string[][]> = {
 // -------- Shared DinoBots --------
 export const DINOBOTS = [
   { name: 'Grimlock', emoji: '', image: '/images/Grimlock.webp', color: '#ef4444' },
-  { name: 'Swoop',    emoji: '', image: '/images/te rex.jpg', color: '#3b82f6' },
-  { name: 'Snarl',    emoji: '', image: '/images/trex.jpg', color: '#22c55e' },
-  { name: 'Sludge',   emoji: '', image: '/images/trex-volcano.jpg', color: '#a855f7' },
-  { name: 'Slag',     emoji: '', image: '/images/WS-50093_WP.jpg', color: '#f97316' },
-  { name: 'Slash',    emoji: '', image: '/images/wp7683103.jpg', color: '#e11d48' },
-  { name: 'Paddles',  emoji: '', image: '/images/optimus-pose.jpg', color: '#0ea5e9' },
-  { name: 'Striker',  emoji: '', image: '/images/optimus-face.jpg', color: '#d97706' },
+  { name: 'Swoop', emoji: '', image: '/images/trex2.jpg', color: '#3b82f6' },
+  { name: 'Snarl', emoji: '', image: '/images/trex.jpg', color: '#22c55e' },
+  { name: 'Sludge', emoji: '', image: '/images/trex-volcano.jpg', color: '#a855f7' },
+  { name: 'Slag', emoji: '', image: '/images/bumblebee1.jpg', color: '#f97316' },
+  { name: 'Slash', emoji: '', image: '/images/dinobot1.webp', color: '#e11d48' },
+  { name: 'Paddles', emoji: '', image: '/images/bumblebee2.jpg', color: '#0ea5e9' },
+  { name: 'Striker', emoji: '', image: '/images/optimus-face.jpg', color: '#d97706' },
 ];
 
 // -------- Colors --------
 export const COLORS_LIST = [
-  { key: 'red',    hex: '#ef4444', de: 'Rot',        bs: 'Crvena' },
-  { key: 'blue',   hex: '#3b82f6', de: 'Blau',       bs: 'Plava' },
-  { key: 'green',  hex: '#22c55e', de: 'Gruen',      bs: 'Zelena' },
-  { key: 'yellow', hex: '#ffe66d', de: 'Gelb',       bs: 'Zuta' },
-  { key: 'purple', hex: '#a855f7', de: 'Lila',       bs: 'Ljubicaste' },
-  { key: 'orange', hex: '#f97316', de: 'Orange',     bs: 'Narandzasta' },
-  { key: 'pink',   hex: '#e11d48', de: 'Pink',       bs: 'Roza' },
-  { key: 'cyan',   hex: '#4ecdc4', de: 'Tuerkis',    bs: 'Tirkizna' },
+  { key: 'red', hex: '#ef4444', de: 'Rot', bs: 'Crvena' },
+  { key: 'blue', hex: '#3b82f6', de: 'Blau', bs: 'Plava' },
+  { key: 'green', hex: '#22c55e', de: 'Gruen', bs: 'Zelena' },
+  { key: 'yellow', hex: '#ffe66d', de: 'Gelb', bs: 'Zuta' },
+  { key: 'purple', hex: '#a855f7', de: 'Lila', bs: 'Ljubicaste' },
+  { key: 'orange', hex: '#f97316', de: 'Orange', bs: 'Narandzasta' },
+  { key: 'pink', hex: '#e11d48', de: 'Pink', bs: 'Roza' },
+  { key: 'cyan', hex: '#4ecdc4', de: 'Tuerkis', bs: 'Tirkizna' },
 ];
 
 // -------- Counting --------
 export const COUNTING_ITEMS = [
-  { key: 'bolt',  emoji: '', image: '/images/optimus-face.jpg', de: 'Schrauben', bs: 'Vijci' },
-  { key: 'star',  emoji: '', image: '/images/optimus-pose.jpg', de: 'Sterne',    bs: 'Zvijezde' },
-  { key: 'dino',  emoji: '', image: '/images/Grimlock.webp', de: 'Dinos',     bs: 'Dinosauri' },
-  { key: 'gear',  emoji: '', image: '/images/trex.jpg', de: 'Zahnräder', bs: 'Zupcanici' },
-  { key: 'orb',   emoji: '', image: '/images/WS-50093_WP.jpg', de: 'Kugeln',    bs: 'Kugle' },
-  { key: 'fire',  emoji: '', image: '/images/trex-volcano.jpg', de: 'Feuer',     bs: 'Vatra' },
+  { key: 'bolt', emoji: '', image: '/images/optimus-face.jpg', de: 'Schrauben', bs: 'Vijci' },
+  { key: 'star', emoji: '', image: '/images/optimus-pose.jpg', de: 'Sterne', bs: 'Zvijezde' },
+  { key: 'dino', emoji: '', image: '/images/Grimlock.webp', de: 'Dinos', bs: 'Dinosauri' },
+  { key: 'gear', emoji: '', image: '/images/trex.jpg', de: 'Zahnräder', bs: 'Zupcanici' },
+  { key: 'orb', emoji: '', image: '/images/bumblebee3.webp', de: 'Kugeln', bs: 'Kugle' },
+  { key: 'fire', emoji: '', image: '/images/trex-volcano.jpg', de: 'Feuer', bs: 'Vatra' },
 ];
 
 // -------- Patterns --------
 export const PATTERN_IMAGES = [
-  '/images/Grimlock.webp',
   '/images/optimus-face.jpg',
+  '/images/optimus-fortnite.jpg',
   '/images/optimus-pose.jpg',
+  '/images/optimus2.jpg',
+  '/images/optimus3.jpg',
+  '/images/Grimlock.webp',
+  '/images/dinobot1.webp',
   '/images/trex.jpg',
+  '/images/trex2.jpg',
   '/images/trex-volcano.jpg',
-  '/images/WS-50093_WP.jpg',
-  '/images/wp7683103.jpg',
-  '/images/large-transformers-4-bumblebee-wallpaper-on-large-print-36x24-original-imaew4hyhf3fdrzb.webp',
-  '/images/bumblebee-transformers-transformers-bumblebee-wallpaper.jpg',
-  '/images/50760-Transformers-Bumblebee.jpg',
+  '/images/bumblebee1.jpg',
+  '/images/bumblebee2.jpg',
+  '/images/bumblebee3.webp',
 ];
 
 // -------- Shapes --------
@@ -160,7 +176,13 @@ export const SHAPES: ShapeDef[] = [
     bs: 'Zvijezda',
     render: (color, size) => (
       <Svg size={size}>
-        <path d="M50 12 L60 38 L88 38 L66 54 L74 80 L50 64 L26 80 L34 54 L12 38 L40 38 Z" fill={color} stroke="#ffffff" strokeWidth="6" strokeLinejoin="round" />
+        <path
+          d="M50 12 L60 38 L88 38 L66 54 L74 80 L50 64 L26 80 L34 54 L12 38 L40 38 Z"
+          fill={color}
+          stroke="#ffffff"
+          strokeWidth="6"
+          strokeLinejoin="round"
+        />
       </Svg>
     ),
   },
@@ -170,7 +192,13 @@ export const SHAPES: ShapeDef[] = [
     bs: 'Srce',
     render: (color, size) => (
       <Svg size={size}>
-        <path d="M50 78 C25 62 16 48 16 36 C16 26 24 20 34 20 C42 20 48 24 50 30 C52 24 58 20 66 20 C76 20 84 26 84 36 C84 48 75 62 50 78 Z" fill={color} stroke="#ffffff" strokeWidth="6" strokeLinejoin="round" />
+        <path
+          d="M50 78 C25 62 16 48 16 36 C16 26 24 20 34 20 C42 20 48 24 50 30 C52 24 58 20 66 20 C76 20 84 26 84 36 C84 48 75 62 50 78 Z"
+          fill={color}
+          stroke="#ffffff"
+          strokeWidth="6"
+          strokeLinejoin="round"
+        />
       </Svg>
     ),
   },

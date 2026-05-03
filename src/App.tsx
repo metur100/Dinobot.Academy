@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { LangProvider, useLang } from './data/LangContext';
 import { MISSIONS, Mission } from './data/gameData';
 import HomeScreen from './components/HomeScreen';
@@ -12,6 +12,7 @@ import CountingGame from './games/CountingGame';
 import PatternsGame from './games/PatternsGame';
 import PhotoPuzzleGame from './games/PhotoPuzzleGame';
 import RunnerGame from './games/RunnerGame';
+import { sounds } from "./audio/sound";
 
 const STORAGE_KEY = 'dinobot-stars-v2';
 const load = (): Record<string, number> => {
@@ -48,13 +49,34 @@ const Inner: React.FC = () => {
   const handleBack = useCallback(() => setView('home'), []);
   const gp = { onComplete: handleComplete, onBack: handleBack };
 
+  useEffect(() => {
+  // Start BG music after first user gesture (mobile friendly)
+  const onFirstGesture = () => {
+    sounds.startBg();
+    window.removeEventListener("pointerdown", onFirstGesture);
+    window.removeEventListener("touchstart", onFirstGesture);
+    window.removeEventListener("keydown", onFirstGesture);
+  };
+
+  window.addEventListener("pointerdown", onFirstGesture, { passive: true });
+  window.addEventListener("touchstart", onFirstGesture, { passive: true });
+  window.addEventListener("keydown", onFirstGesture);
+
+  return () => {
+    window.removeEventListener("pointerdown", onFirstGesture);
+    window.removeEventListener("touchstart", onFirstGesture);
+    window.removeEventListener("keydown", onFirstGesture);
+  };
+}, []);
+
+
   return (
     <>
       {celebration && (
         <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.75)', backdropFilter:'blur(4px)' }}>
           <div className="pop" style={{ textAlign:'center' }}>
             <div style={{ height: 12 }} />
-            <h2 style={{ fontFamily:'Fredoka One,cursive', fontSize:'2.8rem', background:'linear-gradient(135deg,#ff6b35,#ffe66d)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>{t.starsSaved}</h2>
+            <h2 style={{ fontFamily:'Fredoka One,cursive', fontSize:'2.8rem', background:'linear-gradient(135deg,#ff6b35,#ffe66d)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>{t.claimStars}</h2>
             <div style={{ fontSize:'2.2rem', marginTop:10 }}>⭐⭐⭐</div>
           </div>
         </div>

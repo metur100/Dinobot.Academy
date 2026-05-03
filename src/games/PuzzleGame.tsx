@@ -12,7 +12,7 @@ interface Props {
 type PuzzleDef = {
   nameDE: string;
   nameBS: string;
-  image: string; // <-- your image in /public/images
+  image: string;
   bgColor: string;
   borderColor: string;
 };

@@ -1,9 +1,7 @@
-export type SoundName = 'click' | 'success' | 'error' | 'bg';
+export type SoundName = "click" | "success" | "error" | "bg";
 
-// Mixed approach:
-// - UI sfx: lightweight WebAudio beeps (no asset dependency)
-// - Background music: HTMLAudioElement from /public (user provides file)
-
+// UI sfx: WebAudio beeps
+// Background music: HTMLAudioElement from /public/music
 let audioCtx: AudioContext | null = null;
 let bgAudio: HTMLAudioElement | null = null;
 let enabled = true;
@@ -26,22 +24,40 @@ const beep = (freq: number, durMs: number, type: OscillatorType, gainVal: number
   o.stop(ctx.currentTime + durMs / 1000);
 };
 
+const ensureBg = () => {
+  if (bgAudio) return bgAudio;
+
+  // Your file: public/music/transformer_autobots.mp3
+  bgAudio = new Audio("/music/transformer_autobots.mp3");
+  bgAudio.loop = true;
+  bgAudio.volume = 0.25;
+  bgAudio.preload = "auto";
+  return bgAudio;
+};
+
 export const sounds = {
   setEnabled(v: boolean) {
     enabled = v;
     if (!enabled) {
-      try { bgAudio?.pause(); } catch {}
+      try {
+        bgAudio?.pause();
+      } catch {}
+    } else {
+      // if re-enabled, don't auto-play; user gesture will start it
     }
   },
 
-  play(name: Exclude<SoundName, 'bg'>) {
+  play(name: Exclude<SoundName, "bg">) {
     if (!enabled) return;
     try {
       const ctx = getCtx();
-      if (ctx.state === 'suspended') ctx.resume();
-      if (name === 'click') beep(520, 50, 'square', 0.03);
-      if (name === 'success') { beep(740, 70, 'sine', 0.05); setTimeout(() => beep(988, 90, 'sine', 0.05), 80); }
-      if (name === 'error') { beep(180, 120, 'sawtooth', 0.04); }
+      if (ctx.state === "suspended") ctx.resume();
+      if (name === "click") beep(520, 50, "square", 0.03);
+      if (name === "success") {
+        beep(740, 70, "sine", 0.05);
+        setTimeout(() => beep(988, 90, "sine", 0.05), 80);
+      }
+      if (name === "error") beep(180, 120, "sawtooth", 0.04);
     } catch {
       // ignore
     }
@@ -50,15 +66,9 @@ export const sounds = {
   startBg() {
     if (!enabled) return;
     try {
-      if (!bgAudio) {
-        // user will place: /public/daynigthmorning.(mp3/ogg/wav)
-        // try without extension first? browsers need extension; so we assume mp3.
-        bgAudio = new Audio('/daynigthmorning.mp3');
-        bgAudio.loop = true;
-        bgAudio.volume = 0.25;
-      }
-      bgAudio.play().catch(() => {
-        // autoplay blocked until user gesture; caller already does pointerdown
+      const a = ensureBg();
+      a.play().catch(() => {
+        // autoplay blocked until a user gesture
       });
     } catch {
       // ignore
@@ -66,6 +76,15 @@ export const sounds = {
   },
 
   stopBg() {
-    try { bgAudio?.pause(); } catch {}
+    try {
+      bgAudio?.pause();
+    } catch {}
+  },
+
+  setBgVolume(v: number) {
+    try {
+      const a = ensureBg();
+      a.volume = Math.max(0, Math.min(1, v));
+    } catch {}
   },
 };

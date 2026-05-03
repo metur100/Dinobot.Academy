@@ -35,7 +35,7 @@ const NumbersGame: React.FC<Props> = ({ onComplete, onBack }) => {
   const [answered, setAnswered] = useState(0);
   const [power, setPower] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const dinobot = DINOBOTS[1];
+const dinobot = { ...DINOBOTS[1], image: DINOBOTS[1].image || '/images/dinobot1.webp', emoji: '' };
 
   useEffect(() => { setChoices(genChoices(q.ans)); }, [q]);
 
