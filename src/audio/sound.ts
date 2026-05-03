@@ -1,3 +1,5 @@
+import { publicUrl } from "../assets/url";
+
 export type SoundName = "click" | "success" | "error" | "bg";
 
 let audioCtx: AudioContext | null = null;
@@ -5,7 +7,7 @@ let bgAudio: HTMLAudioElement | null = null;
 let enabled = true;
 
 /** voice lines (one-shots) played on top of bg */
-const VOICE_FILES = ["/music/optimus_prime_voice.mp3", "/music/optimus_prime.mp3"] as const;
+const VOICE_FILES = [publicUrl("music/optimus_prime_voice.mp3"), publicUrl("music/optimus_prime.mp3")] as const;
 
 let voiceTimer: number | null = null;
 let voicePlaying = false;
@@ -13,6 +15,16 @@ let voicePlaying = false;
 const getCtx = () => {
   if (!audioCtx) audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
   return audioCtx;
+};
+
+const unlockAudio = async () => {
+  // Helps on mobile Safari: ensure context resumed inside a gesture
+  try {
+    const ctx = getCtx();
+    if (ctx.state === "suspended") await ctx.resume();
+  } catch {
+    // ignore
+  }
 };
 
 const beep = (freq: number, durMs: number, type: OscillatorType, gainVal: number) => {
@@ -31,10 +43,14 @@ const beep = (freq: number, durMs: number, type: OscillatorType, gainVal: number
 const ensureBg = () => {
   if (bgAudio) return bgAudio;
 
-  bgAudio = new Audio("/music/autobots.mp3");
+  bgAudio = new Audio(publicUrl("music/autobots.mp3"));
   bgAudio.loop = true;
   bgAudio.volume = 0.25;
   bgAudio.preload = "auto";
+
+  // iOS sometimes needs this hint
+  (bgAudio as any).playsInline = true;
+
   return bgAudio;
 };
 
@@ -55,7 +71,6 @@ const scheduleNextVoice = () => {
   // random gap between lines (seconds)
   const delaySec = randInt(18, 45);
   voiceTimer = window.setTimeout(() => {
-    // if disabled in-between
     if (!enabled) return;
 
     // don't stack voice lines if something is already playing
@@ -68,9 +83,9 @@ const scheduleNextVoice = () => {
     const v = new Audio(src);
     voicePlaying = true;
 
-    // voice volume a bit louder than bg; tweak as you like
     v.volume = 0.75;
     v.preload = "auto";
+    (v as any).playsInline = true;
 
     const done = () => {
       v.onended = null;
@@ -82,7 +97,6 @@ const scheduleNextVoice = () => {
     v.onended = done;
     v.onerror = done;
 
-    // play on top of bg
     v.play().catch(() => {
       // autoplay restrictions or load error
       done();
@@ -91,7 +105,6 @@ const scheduleNextVoice = () => {
 };
 
 const startVoiceLoop = () => {
-  // start scheduling if not already running
   if (voiceTimer !== null) return;
   scheduleNextVoice();
 };
@@ -107,8 +120,7 @@ export const sounds = {
       stopVoiceLoop();
       return;
     }
-
-    // enabled again: don't autoplay; will resume on next user gesture calling startBg()
+    // enabled again: will resume on next user gesture calling startBg()
   },
 
   play(name: Exclude<SoundName, "bg">) {
@@ -116,6 +128,7 @@ export const sounds = {
     try {
       const ctx = getCtx();
       if (ctx.state === "suspended") ctx.resume();
+
       if (name === "click") beep(520, 50, "square", 0.03);
       if (name === "success") {
         beep(740, 70, "sine", 0.05);
@@ -127,27 +140,33 @@ export const sounds = {
     }
   },
 
-  startBg() {
+  async startBg() {
     if (!enabled) return;
+
+    // Must run inside a user gesture for mobile
+    await unlockAudio();
+
     try {
       const a = ensureBg();
-      a.play()
-        .then(() => {
-          // once bg successfully starts, we can schedule voice lines
-          startVoiceLoop();
-        })
-        .catch(() => {
-          // autoplay blocked until user gesture
-          // voice loop should not start until bg can actually play
-        });
+
+      // If already playing, don’t restart
+      if (!a.paused) {
+        startVoiceLoop();
+        return;
+      }
+
+      await a.play();
+      startVoiceLoop();
     } catch {
-      // ignore
+      // autoplay blocked until user gesture OR file not found.
+      // Tip for debugging: open DevTools Network tab and check /Dinobot.Academy/music/autobots.mp3 loads (200).
     }
   },
 
   stopBg() {
     try {
       bgAudio?.pause();
+      if (bgAudio) bgAudio.currentTime = 0;
     } catch {}
     stopVoiceLoop();
   },
@@ -159,10 +178,8 @@ export const sounds = {
     } catch {}
   },
 
-  /** Optional: set voice volume without changing bg */
   setVoiceVolume(v: number) {
-    // one-shots are created per play; store desired value in a var if you want.
-    // For now, tweak volume in code above (v.volume = 0.75).
     void v;
+    // one-shots are created per play; if you want global control, store desired volume in a variable.
   },
 };
