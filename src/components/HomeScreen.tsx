@@ -9,11 +9,29 @@ interface Props {
   onSelect: (m: Mission) => void;
 }
 
+// Games you disabled in App.tsx:
+const DISABLED_GAMES = new Set<Mission["game"]>([
+  "letters",
+  "numbers",
+  "shapes",
+  "colors",
+  "counting",
+  "patterns",
+]);
+
 const HomeScreen: React.FC<Props> = ({ missionStars, onSelect }) => {
   const { lang, setLang, t } = useLang();
-  const total = Object.values(missionStars).reduce((a, b) => a + b, 0);
-  const max = MISSIONS.length * 3;
-  const r = total / max;
+
+  // Filter missions shown on home screen to match App.tsx routing
+  const visibleMissions = MISSIONS.filter((m) => !DISABLED_GAMES.has(m.game));
+
+  // Totals should match visible missions only
+  const total = Object.entries(missionStars)
+    .filter(([id]) => visibleMissions.some((m) => m.id === id))
+    .reduce((sum, [, v]) => sum + (v ?? 0), 0);
+
+  const max = visibleMissions.length * 3;
+  const r = max > 0 ? total / max : 0;
 
   const upgrade =
     r >= 0.8
@@ -122,7 +140,7 @@ const HomeScreen: React.FC<Props> = ({ missionStars, onSelect }) => {
           margin: "0 auto",
         }}
       >
-        {MISSIONS.map((m) => {
+        {visibleMissions.map((m) => {
           const stars = missionStars[m.id] ?? 0;
           const done = stars > 0;
           const mt = t.missions[m.id as keyof typeof t.missions];
@@ -150,7 +168,19 @@ const HomeScreen: React.FC<Props> = ({ missionStars, onSelect }) => {
                 (e.currentTarget as HTMLElement).style.transform = "";
               }}
             >
-              <div style={{ position: "absolute", top: -16, right: -16, width: 70, height: 70, borderRadius: "50%", background: m.color + "1a", filter: "blur(18px)" }} />
+              <div
+                style={{
+                  position: "absolute",
+                  top: -16,
+                  right: -16,
+                  width: 70,
+                  height: 70,
+                  borderRadius: "50%",
+                  background: m.color + "1a",
+                  filter: "blur(18px)",
+                }}
+              />
+
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                 <div
                   style={{

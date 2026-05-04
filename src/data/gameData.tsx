@@ -4,8 +4,8 @@ import { publicUrl } from "../assets/url";
 
 export interface Mission {
   id: string;
-  icon?: string; // emoji fallback (optional)
-  image?: string; // NEW: /images/... (resolved via publicUrl)
+  icon?: string;
+  image?: string;
   color: string;
   game:
     | "letters"
@@ -65,7 +65,8 @@ export const WORDS_BY_LEVEL: Record<Lang, string[][]> = {
 // -------- Shared DinoBots --------
 export const DINOBOTS = [
   { name: "Grimlock", emoji: "", image: publicUrl("images/Grimlock.webp"), color: "#ef4444" },
-  { name: "Swoop", emoji: "", image: publicUrl("images/trex2.jpg"), color: "#3b82f6" },
+  // UPDATED: use new file dino.jpeg instead of trex2.jpg (so the new image is actually used)
+  { name: "Swoop", emoji: "", image: publicUrl("images/dino.jpeg"), color: "#3b82f6" },
   { name: "Snarl", emoji: "", image: publicUrl("images/trex.jpg"), color: "#22c55e" },
   { name: "Sludge", emoji: "", image: publicUrl("images/trex-volcano.jpg"), color: "#a855f7" },
   { name: "Slag", emoji: "", image: publicUrl("images/bumblebee1.jpg"), color: "#f97316" },
@@ -103,11 +104,15 @@ export const PATTERN_IMAGES = [
   publicUrl("images/optimus-pose.jpg"),
   publicUrl("images/optimus2.jpg"),
   publicUrl("images/optimus3.jpg"),
+  publicUrl("images/optimus-grimlock.jpeg"),  // NEW
+  publicUrl("images/transformers.jpg"),       // NEW
+  publicUrl("images/Miniforce.webp"),         // NEW
   publicUrl("images/Grimlock.webp"),
   publicUrl("images/dinobot1.webp"),
   publicUrl("images/trex.jpg"),
   publicUrl("images/trex2.jpg"),
   publicUrl("images/trex-volcano.jpg"),
+  publicUrl("images/dino.jpeg"),              // NEW
   publicUrl("images/bumblebee1.jpg"),
   publicUrl("images/bumblebee2.jpg"),
   publicUrl("images/bumblebee3.webp"),

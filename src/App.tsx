@@ -2,14 +2,14 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { LangProvider, useLang } from './data/LangContext';
 import { MISSIONS, Mission } from './data/gameData';
 import HomeScreen from './components/HomeScreen';
-import LettersGame  from './games/LettersGame';
+/* import LettersGame  from './games/LettersGame';
 import NumbersGame  from './games/NumbersGame';
 import ShapesGame   from './games/ShapesGame';
-import ColorsGame   from './games/ColorsGame';
+import ColorsGame   from './games/ColorsGame'; */
 import MemoryGame   from './games/MemoryGame';
 import PuzzleGame   from './games/PuzzleGame';
-import CountingGame from './games/CountingGame';
-import PatternsGame from './games/PatternsGame';
+/* import CountingGame from './games/CountingGame';
+import PatternsGame from './games/PatternsGame'; */
 import PhotoPuzzleGame from './games/PhotoPuzzleGame';
 import RunnerGame from './games/RunnerGame';
 import { sounds } from "./audio/sound";
@@ -82,14 +82,14 @@ const Inner: React.FC = () => {
         </div>
       )}
       {view === 'home'     && <HomeScreen missionStars={stars} onSelect={handleSelect} />}
-      {view === 'letters'  && <LettersGame  {...gp} />}
+{/*       {view === 'letters'  && <LettersGame  {...gp} />}
       {view === 'numbers'  && <NumbersGame  {...gp} />}
       {view === 'shapes'   && <ShapesGame   {...gp} />}
-      {view === 'colors'   && <ColorsGame   {...gp} />}
+      {view === 'colors'   && <ColorsGame   {...gp} />} */}
       {view === 'memory'   && <MemoryGame   {...gp} />}
       {view === 'puzzle'   && <PuzzleGame   {...gp} />}
-      {view === 'counting' && <CountingGame {...gp} />}
-      {view === 'patterns' && <PatternsGame {...gp} />}
+{/*       {view === 'counting' && <CountingGame {...gp} />}
+      {view === 'patterns' && <PatternsGame {...gp} />} */}
       {view === 'photoPuzzle' && <PhotoPuzzleGame {...gp} />}
       {view === 'runner' && <RunnerGame {...gp} />}
     </>
