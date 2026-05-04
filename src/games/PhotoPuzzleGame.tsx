@@ -21,7 +21,6 @@ const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(ma
 
 type Level = { size: 3 | 4 | 5; photo: string };
 
-// pick random photos (no fixed start index)
 const pickRandomPhotos = (count: number) => {
   if (PHOTO_POOL.length === 0) return [];
   const pool = shuffle(PHOTO_POOL);
@@ -53,8 +52,6 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Rebuild levels on every mount, so first image is not always the same.
-  // (If you want “new random image” also when returning from other missions, this is enough.)
   const levels = useMemo(() => buildLevels(), []);
   const [levelIndex, setLevelIndex] = useState(0);
 
@@ -66,6 +63,116 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
   const [tray, setTray] = useState<number[]>(() => shuffle(range(total)));
   const [slots, setSlots] = useState<(number | null)[]>(() => Array(total).fill(null));
   const [moves, setMoves] = useState(0);
+
+  const isComplete = slots.length === total && slots.every((v, i) => v === i);
+
+  useEffect(() => {
+    if (!isComplete) return;
+    const t = window.setTimeout(() => {
+      if (levelIndex < levels.length - 1) setLevelIndex((i) => i + 1);
+      else onComplete(3, `Finished 9 levels. Moves last level: ${moves}`);
+    }, 700);
+    return () => window.clearTimeout(t);
+  }, [isComplete, levelIndex, levels.length, moves, onComplete]);
+
+  // ---- sizing
+  const pad = 16;
+  const maxW = clamp(vw - pad * 2, 320, 980);
+  const maxH = clamp(vh - pad * 2 - 90, 420, 1100);
+
+  // IMPORTANT: smaller gaps so image is recognizable
+  const boardGap = clamp(Math.round(maxW * 0.006), 2, 6); // 2..6
+  const trayGap = clamp(Math.round(maxW * 0.012), 6, 12); // 6..12
+
+  const trayCols = useMemo(() => {
+    const targetRows = vw < 420 ? 2 : 3;
+    return clamp(Math.ceil(total / targetRows), 4, 10);
+  }, [total, vw]);
+
+  const sizesPx = useMemo(() => {
+    // board tiles, account for boardGap
+    const boardTileByWidth = Math.floor((maxW - boardGap * (size - 1)) / size);
+
+    // tray tiles based on board, account for trayGap
+    const trayTile1 = clamp(Math.floor(boardTileByWidth * 0.62), 44, 92);
+    const trayRows = Math.ceil(total / trayCols);
+    const trayH = trayRows * trayTile1 + trayGap * (trayRows - 1);
+
+    // reference preview height: keep smaller but clear
+    const previewH = clamp(Math.floor(maxH * 0.22), 120, 240);
+
+    const remainForBoard = maxH - trayH - previewH - 24;
+    const boardTileByHeight = Math.floor((remainForBoard - boardGap * (size - 1)) / size);
+
+    const boardTile = clamp(
+      Math.min(boardTileByWidth, boardTileByHeight),
+      size === 5 ? 54 : 64,
+      size === 3 ? 150 : 125
+    );
+
+    const trayTile = clamp(Math.floor(boardTile * 0.62), 44, 92);
+
+    return {
+      boardTile,
+      trayTile,
+      boardW: boardTile * size + boardGap * (size - 1),
+      previewH,
+    };
+  }, [maxW, maxH, size, total, trayCols, boardGap, trayGap]);
+
+  // ---- shared “crop wrapper” so board + reference match 1:1
+  const cropWrapStyle = (w: number): React.CSSProperties => ({
+    width: w,
+    height: w, // square => same crop basis as the puzzle board
+    overflow: "hidden",
+    borderRadius: Math.max(12, Math.floor(w * 0.14)),
+    position: "relative",
+    background: "rgba(0,0,0,0.18)",
+  });
+
+  const tileFrameStyle = (w: number, filled: boolean, highlight = false): React.CSSProperties => ({
+    width: w,
+    height: w,
+    borderRadius: Math.max(12, Math.floor(w * 0.14)),
+    border: highlight ? "3px solid #ffe66d" : "2px solid rgba(255,255,255,0.14)",
+    background: filled ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.18)",
+    boxShadow: "0 14px 28px rgba(0,0,0,0.35)",
+    overflow: "hidden",
+    position: "relative",
+    touchAction: "none",
+    userSelect: "none",
+  });
+
+  // This draws the correct “piece” from the SAME square-cropped image.
+  const pieceImageStyle = (pieceIndex: number, tileW: number): React.CSSProperties => {
+    const x = pieceIndex % size;
+    const y = Math.floor(pieceIndex / size);
+    return {
+      width: tileW * size,
+      height: tileW * size,
+      objectFit: "cover",
+      transform: `translate(${-x * tileW}px, ${-y * tileW}px)`,
+      pointerEvents: "none",
+      userSelect: "none",
+      display: "block",
+    };
+  };
+
+  // -------------------------
+  // Drag + Drop (pointer-based)
+  // -------------------------
+  const boardSlotEls = useRef<(HTMLDivElement | null)[]>([]);
+  const trayContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const [dragging, setDragging] = useState<{
+    from: DragFrom;
+    piece: number;
+    x: number;
+    y: number;
+    ghostW: number;
+  } | null>(null);
+
+  const stopDragging = () => setDragging(null);
 
   const resetBoardForLevel = (idx: number) => {
     const lv = levels[idx];
@@ -81,118 +188,18 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levelIndex]);
 
-  const isComplete = slots.length === total && slots.every((v, i) => v === i);
-
-  useEffect(() => {
-    if (!isComplete) return;
-    const t = window.setTimeout(() => {
-      if (levelIndex < levels.length - 1) setLevelIndex((i) => i + 1);
-      else onComplete(3, `Finished 9 levels. Moves last level: ${moves}`);
-    }, 700);
-    return () => window.clearTimeout(t);
-  }, [isComplete, levelIndex, levels.length, moves, onComplete]);
-
-  // --- Layout sizing (no vertical scroll sizing) ---
-  const gap = 10;
-  const pad = 16;
-  const maxW = clamp(vw - pad * 2, 320, 980);
-  const maxH = clamp(vh - pad * 2 - 90, 420, 1100);
-
-  const trayCols = useMemo(() => {
-    const targetRows = vw < 420 ? 2 : 3;
-    return clamp(Math.ceil(total / targetRows), 4, 10);
-  }, [total, vw]);
-
-  const sizesPx = useMemo(() => {
-    const boardTileByWidth = Math.floor((maxW - gap * (size - 1)) / size);
-
-    const trayTile1 = clamp(Math.floor(boardTileByWidth * 0.62), 44, 86);
-    const trayRows = Math.ceil(total / trayCols);
-    const trayH = trayRows * trayTile1 + gap * (trayRows - 1);
-
-    // reserve some space for preview image
-    const previewH = clamp(Math.floor(maxH * 0.22), 120, 220);
-
-    const remainForBoard = maxH - trayH - previewH - 22;
-    const boardTileByHeight = Math.floor((remainForBoard - gap * (size - 1)) / size);
-
-    const boardTile = clamp(
-      Math.min(boardTileByWidth, boardTileByHeight),
-      size === 5 ? 52 : 62,
-      size === 3 ? 140 : 120
-    );
-
-    const trayTile = clamp(Math.floor(boardTile * 0.62), 44, 86);
-
-    return {
-      boardTile,
-      trayTile,
-      boardW: boardTile * size + gap * (size - 1),
-      previewH,
-    };
-  }, [maxW, maxH, size, total, trayCols]);
-
-  const tileStyle = (w: number, filled: boolean, highlight = false): React.CSSProperties => ({
-    width: w,
-    height: w,
-    borderRadius: Math.max(12, Math.floor(w * 0.14)),
-    border: highlight ? "3px solid #ffe66d" : "2px solid rgba(255,255,255,0.14)",
-    background: filled ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.18)",
-    boxShadow: "0 14px 28px rgba(0,0,0,0.35)",
-    overflow: "hidden",
-    position: "relative",
-    touchAction: "none", // IMPORTANT: allow pointermove on touch without scrolling
-    userSelect: "none",
-  });
-
-  const pieceImageStyle = (pieceIndex: number, tileW: number): React.CSSProperties => {
-    const x = pieceIndex % size;
-    const y = Math.floor(pieceIndex / size);
-    return {
-      width: tileW * size,
-      height: tileW * size,
-      objectFit: "cover",
-      transform: `translate(${-x * tileW}px, ${-y * tileW}px)`,
-      pointerEvents: "none",
-      userSelect: "none",
-    };
-  };
-
-  // -------------------------
-  // Drag + Drop (pointer-based)
-  // -------------------------
-  const boardSlotEls = useRef<(HTMLDivElement | null)[]>([]);
-  const trayTileEls = useRef<(HTMLDivElement | null)[]>([]);
-  const trayContainerRef = useRef<HTMLDivElement | null>(null);
-
-  const [dragging, setDragging] = useState<{
-    from: DragFrom;
-    piece: number;
-    // current pointer position (viewport)
-    x: number;
-    y: number;
-    // show correct cropped piece sized for board tiles (so it matches drop target)
-    ghostW: number;
-  } | null>(null);
-
-  const stopDragging = () => setDragging(null);
-
   const pointToTarget = (x: number, y: number): { kind: "board"; slotIndex: number } | { kind: "tray" } | null => {
-    // check board slots
     for (let i = 0; i < boardSlotEls.current.length; i++) {
       const el = boardSlotEls.current[i];
       if (!el) continue;
       const r = el.getBoundingClientRect();
       if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return { kind: "board", slotIndex: i };
     }
-
-    // tray container
     const trayEl = trayContainerRef.current;
     if (trayEl) {
       const r = trayEl.getBoundingClientRect();
       if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return { kind: "tray" };
     }
-
     return null;
   };
 
@@ -223,31 +230,27 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
     const piece = dragging.piece;
     const from = dragging.from;
 
-    // no target -> revert to origin
     if (!target) {
       stopDragging();
       return;
     }
 
     if (target.kind === "tray") {
-      // dropping into tray
       if (from.kind === "board") {
         clearBoardSlot(from.slotIndex);
         addToTrayFront(piece);
         setMoves((m) => m + 1);
       }
-      // tray -> tray does nothing
       stopDragging();
       return;
     }
 
-    // dropping into board slot
     const slotIndex = target.slotIndex;
     const filled = slots[slotIndex];
 
     if (from.kind === "tray") {
       if (filled !== null) {
-        // swap: tray piece goes to board, board piece returns to tray
+        // swap tray->board
         setBoardSlot(slotIndex, piece);
         removeFromTray(piece);
         addToTrayFront(filled);
@@ -255,8 +258,6 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
         stopDragging();
         return;
       }
-
-      // empty slot
       setBoardSlot(slotIndex, piece);
       removeFromTray(piece);
       setMoves((m) => m + 1);
@@ -271,7 +272,6 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
     }
 
     if (filled === null) {
-      // move to empty
       clearBoardSlot(from.slotIndex);
       setBoardSlot(slotIndex, piece);
       setMoves((m) => m + 1);
@@ -279,7 +279,7 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
       return;
     }
 
-    // swap board <-> board
+    // swap board<->board
     clearBoardSlot(from.slotIndex);
     setBoardSlot(from.slotIndex, filled);
     setBoardSlot(slotIndex, piece);
@@ -288,14 +288,13 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
   };
 
   const onPointerDownTray = (e: React.PointerEvent, piece: number, indexInTray: number) => {
-    // start drag from tray
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setDragging({
       from: { kind: "tray", piece, indexInTray },
       piece,
       x: e.clientX,
       y: e.clientY,
-      ghostW: sizesPx.boardTile, // show “real” puzzle size ghost
+      ghostW: sizesPx.boardTile,
     });
   };
 
@@ -322,25 +321,6 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
 
   const onPointerCancel = () => stopDragging();
 
-  const ghostStyle: React.CSSProperties = dragging
-    ? {
-        position: "fixed",
-        left: dragging.x,
-        top: dragging.y,
-        transform: "translate(-50%, -50%)",
-        width: dragging.ghostW,
-        height: dragging.ghostW,
-        zIndex: 9999,
-        pointerEvents: "none",
-        borderRadius: Math.max(12, Math.floor(dragging.ghostW * 0.14)),
-        overflow: "hidden",
-        boxShadow: "0 18px 44px rgba(0,0,0,0.55)",
-        border: "3px solid rgba(255,230,109,0.9)",
-        background: "rgba(255,255,255,0.08)",
-      }
-    : {};
-
-  // highlight potential board drop target while dragging
   const hoverTarget = useMemo(() => {
     if (!dragging) return null;
     const t = pointToTarget(dragging.x, dragging.y);
@@ -348,12 +328,25 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
     return null;
   }, [dragging, slots]);
 
-  // prevent tray/board from showing duplicate piece while dragging
   const isPieceBeingDraggedFromTray = (piece: number) =>
     dragging?.from.kind === "tray" && dragging.piece === piece;
 
   const isPieceBeingDraggedFromBoard = (slotIndex: number) =>
     dragging?.from.kind === "board" && dragging.from.slotIndex === slotIndex;
+
+  const ghostStyle: React.CSSProperties =
+    dragging
+      ? {
+          position: "fixed",
+          left: dragging.x,
+          top: dragging.y,
+          transform: "translate(-50%, -50%)",
+          width: dragging.ghostW,
+          height: dragging.ghostW,
+          zIndex: 9999,
+          pointerEvents: "none",
+        }
+      : {};
 
   return (
     <GameShell onBack={onBack} current={levelIndex + 1} total={levels.length} score={moves}>
@@ -369,9 +362,9 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
           style={{
             display: "grid",
             gridTemplateColumns: `repeat(${trayCols}, minmax(0, ${sizesPx.trayTile}px))`,
-            gap,
+            gap: trayGap,
             justifyContent: "center",
-            marginBottom: 14,
+            marginBottom: 12,
           }}
         >
           {tray.map((pieceIndex, indexInTray) => {
@@ -379,18 +372,18 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
             return (
               <div
                 key={`${pieceIndex}-${indexInTray}`}
-                ref={(el) => {
-                  trayTileEls.current[indexInTray] = el;
-                }}
                 onPointerDown={(e) => onPointerDownTray(e, pieceIndex, indexInTray)}
                 style={{
-                  ...tileStyle(sizesPx.trayTile, true, false),
+                  ...tileFrameStyle(sizesPx.trayTile, true, false),
                   cursor: "grab",
-                  opacity: hidden ? 0.15 : 1,
+                  opacity: hidden ? 0.2 : 1,
                 }}
               >
-                {/* Show cropped piece in tray */}
-                {!hidden && <img src={photo} alt="" style={pieceImageStyle(pieceIndex, sizesPx.trayTile)} />}
+                <div style={{ position: "absolute", inset: 0 }}>
+                  <div style={cropWrapStyle(sizesPx.trayTile)}>
+                    {!hidden && <img src={photo} alt="" style={pieceImageStyle(pieceIndex, sizesPx.trayTile)} />}
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -401,7 +394,7 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
           style={{
             display: "grid",
             gridTemplateColumns: `repeat(${size}, ${sizesPx.boardTile}px)`,
-            gap,
+            gap: boardGap,
             width: sizesPx.boardW,
             margin: "0 auto",
           }}
@@ -417,18 +410,17 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
                   boardSlotEls.current[slotIndex] = el;
                 }}
                 style={{
-                  ...tileStyle(sizesPx.boardTile, filledPiece !== null, highlight),
-                  cursor: filledPiece !== null ? "grab" : "pointer",
+                  ...tileFrameStyle(sizesPx.boardTile, filledPiece !== null, highlight),
+                  cursor: filledPiece !== null ? "grab" : "default",
                 }}
               >
                 {filledPiece !== null ? (
-                  <div
-                    onPointerDown={(e) => onPointerDownBoard(e, slotIndex, filledPiece)}
-                    style={{ position: "absolute", inset: 0 }}
-                  >
-                    {!isPieceBeingDraggedFromBoard(slotIndex) && (
-                      <img src={photo} alt="" style={pieceImageStyle(filledPiece, sizesPx.boardTile)} />
-                    )}
+                  <div onPointerDown={(e) => onPointerDownBoard(e, slotIndex, filledPiece)} style={{ position: "absolute", inset: 0 }}>
+                    <div style={cropWrapStyle(sizesPx.boardTile)}>
+                      {!isPieceBeingDraggedFromBoard(slotIndex) && (
+                        <img src={photo} alt="" style={pieceImageStyle(filledPiece, sizesPx.boardTile)} />
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div
@@ -437,7 +429,7 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
                       inset: 0,
                       display: "grid",
                       placeItems: "center",
-                      opacity: 0.18,
+                      opacity: 0.14,
                       fontWeight: 900,
                       fontSize: "1.05rem",
                     }}
@@ -450,15 +442,8 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
           })}
         </div>
 
-        {/* BOTTOM: FULL REFERENCE IMAGE (always visible) */}
-        <div
-          style={{
-            marginTop: 16,
-            display: "flex",
-            justifyContent: "center",
-            width: "100%",
-          }}
-        >
+        {/* BOTTOM: REFERENCE IMAGE (same crop as board) */}
+        <div style={{ marginTop: 14, display: "flex", justifyContent: "center", width: "100%" }}>
           <div
             style={{
               width: Math.min(sizesPx.boardW, 520),
@@ -468,26 +453,40 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
               border: "2px solid rgba(255,255,255,0.14)",
               background: "rgba(0,0,0,0.18)",
               boxShadow: "0 14px 28px rgba(0,0,0,0.35)",
+              padding: 10,
             }}
           >
-            <img
-              src={photo}
-              alt=""
-              draggable={false}
+            {/* square crop wrapper => EXACT same crop basis as the board */}
+            <div
               style={{
                 width: "100%",
-                height: sizesPx.previewH,
-                objectFit: "cover",
-                display: "block",
+                aspectRatio: "1 / 1",
+                borderRadius: 14,
+                overflow: "hidden",
+                background: "rgba(0,0,0,0.18)",
               }}
-            />
+            >
+              <img
+                src={photo}
+                alt=""
+                draggable={false}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover", // crop is now identical to the board because container is square too
+                  display: "block",
+                }}
+              />
+            </div>
           </div>
         </div>
 
-        {/* DRAG GHOST (shows cropped piece while dragging) */}
+        {/* DRAG GHOST */}
         {dragging && (
           <div style={ghostStyle}>
-            <img src={photo} alt="" style={pieceImageStyle(dragging.piece, dragging.ghostW)} />
+            <div style={cropWrapStyle(dragging.ghostW)}>
+              <img src={photo} alt="" style={pieceImageStyle(dragging.piece, dragging.ghostW)} />
+            </div>
           </div>
         )}
       </div>
