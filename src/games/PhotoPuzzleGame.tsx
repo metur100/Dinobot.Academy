@@ -356,7 +356,7 @@ const PhotoPuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
       >
-        {/* TOP: TRAY */}
+
         <div
           ref={trayContainerRef}
           style={{

@@ -13,11 +13,6 @@ function shuffle<T>(arr: T[]) {
   return a;
 }
 
-// Rounds:
-// 1) 2x2  => 2 pairs (4 cards)
-// 2) 4x4  => 8 pairs (16 cards)
-// 3) 4x4  => 8 pairs (16 cards) but shifted pool so it feels different
-// 4) 6x6  => 18 pairs (36 cards)
 const ROUNDS = [
   { grid: 2, pairs: 2, poolShift: 0 },
   { grid: 4, pairs: 8, poolShift: 0 },
@@ -43,17 +38,26 @@ const MemoryGame: React.FC<Props> = ({ onComplete, onBack }) => {
 
   // build deck for the current round (changes when round changes)
   const cards = useMemo(() => {
-    const poolLen = Math.max(1, MEMORY_POOL.length);
+    const poolLen = MEMORY_POOL.length;
 
-    // rotate pool per round so it feels different
+    // safety: if pool empty, avoid crash
+    if (poolLen === 0) return [];
+
+    // rotate by shift (so round 3 uses a different “window”)
     const start = (roundDef.poolShift + roundIndex * pairs) % poolLen;
     const rotated = [...MEMORY_POOL.slice(start), ...MEMORY_POOL.slice(0, start)];
 
-    // pick N images for pairs (if not enough images, reuse from rotated)
-    const picked: string[] = [];
-    for (let i = 0; i < pairs; i++) picked.push(rotated[i % rotated.length]);
+    // KEY CHANGE: shuffle rotated pool so rounds are always random
+    const randomizedPool = shuffle(rotated);
 
-    // duplicate for pairs then shuffle
+    // pick exactly N unique images for pairs
+    // (if you ever have fewer images than needed, reuse safely)
+    const picked: string[] = [];
+    for (let i = 0; i < pairs; i++) {
+      picked.push(randomizedPool[i % randomizedPool.length]);
+    }
+
+    // make pairs + shuffle deck
     return shuffle([...picked, ...picked]);
   }, [roundIndex, roundDef.poolShift, pairs]);
 
@@ -68,7 +72,6 @@ const MemoryGame: React.FC<Props> = ({ onComplete, onBack }) => {
     if (cards.length === 0) return;
     if (matched.length !== cards.length) return;
 
-    // round finished
     setRoundsWon((w) => w + 1);
     setTotalMoves((tm) => tm + moves);
 
@@ -76,7 +79,6 @@ const MemoryGame: React.FC<Props> = ({ onComplete, onBack }) => {
 
     const t = window.setTimeout(() => {
       if (isLast) {
-        // stars based on average moves across all rounds
         const avg = (totalMoves + moves) / ROUNDS.length;
         const stars = avg <= 10 ? 3 : avg <= 16 ? 2 : 1;
         onComplete(stars, `Rounds: ${ROUNDS.length}/${ROUNDS.length}, Total moves: ${totalMoves + moves}`);
@@ -114,7 +116,7 @@ const MemoryGame: React.FC<Props> = ({ onComplete, onBack }) => {
     <GameShell onBack={onBack} current={roundIndex + 1} total={ROUNDS.length} score={roundsWon}>
       <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", padding: "0 14px 40px" }}>
         <div style={{ fontSize: "1.25rem", fontWeight: 800, marginBottom: 14 }}>
-          Moves: {moves} • {grid}×{grid}
+           {moves}
         </div>
 
         <div
