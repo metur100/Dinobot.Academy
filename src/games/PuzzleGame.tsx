@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { DINOBOTS } from "../data/gameData";
 import { useLang } from "../data/LangContext";
 import DinoBot from "../components/DinoBot";
@@ -10,51 +10,33 @@ interface Props {
   onBack: () => void;
 }
 
-type PuzzleDef = {
-  nameDE: string;
-  nameBS: string;
-  image: string;
-  bgColor: string;
-  borderColor: string;
-};
+type LevelDef = { size: 3 | 4 | 5 };
 
-const PUZZLES: PuzzleDef[] = [
-  {
-    nameDE: "Grimlock",
-    nameBS: "Grimlock",
-    image: publicUrl("images/Grimlock.webp"),
-    bgColor: "#0f1b12",
-    borderColor: "#22c55e",
-  },
-  {
-    nameDE: "Optimus",
-    nameBS: "Optimus",
-    image: publicUrl("images/optimus-pose.jpg"),
-    bgColor: "#0f172a",
-    borderColor: "#4ecdc4",
-  },
-  {
-    nameDE: "T-Rex Vulkan",
-    nameBS: "T-Rex Vulkan",
-    image: publicUrl("images/trex-volcano.jpg"),
-    bgColor: "#1f0f0f",
-    borderColor: "#ff6b35",
-  },
-  {
-    nameDE: "Bumblebee",
-    nameBS: "Bumblebee",
-    image: publicUrl("images/bumblebee1.jpg"),
-    bgColor: "#14110a",
-    borderColor: "#a855f7",
-  },
+// 3 levels: 3x3, 4x4, 5x5
+const LEVELS: LevelDef[] = [{ size: 3 }, { size: 4 }, { size: 5 }];
+
+// Put your “16 images” here (add/remove freely).
+// These should match your public/images filenames.
+const IMAGE_POOL: string[] = [
+  publicUrl("images/optimus-face.jpg"),
+  publicUrl("images/optimus-fortnite.jpg"),
+  publicUrl("images/optimus-pose.jpg"),
+  publicUrl("images/optimus2.jpg"),
+  publicUrl("images/optimus3.jpg"),
+  publicUrl("images/optimus-grimlock.jpeg"),
+  publicUrl("images/transformers.jpg"),
+  publicUrl("images/Miniforce.webp"),
+  publicUrl("images/Grimlock.webp"),
+  publicUrl("images/dinobot1.webp"),
+  publicUrl("images/trex.jpg"),
+  publicUrl("images/trex2.jpg"),
+  publicUrl("images/trex-volcano.jpg"),
+  publicUrl("images/dino.jpeg"),
+  publicUrl("images/bumblebee1.jpg"),
+  publicUrl("images/bumblebee2.jpg"),
+  // you can include bumblebee3.webp too if you want 17:
+  // publicUrl("images/bumblebee3.webp"),
 ];
-
-type PuzzleState = {
-  puzzle: PuzzleDef;
-  slots: (number | null)[];
-  remaining: number[];
-  selectedTile: number | null;
-};
 
 function shuffle<T>(arr: T[]) {
   const a = [...arr];
@@ -65,32 +47,57 @@ function shuffle<T>(arr: T[]) {
   return a;
 }
 
-function initPuzzle(puzzle: PuzzleDef): PuzzleState {
-  const indices = shuffle(Array.from({ length: 9 }, (_, i) => i));
-  return { puzzle, slots: Array(9).fill(null), remaining: indices, selectedTile: null };
-}
+const PREVIEW_MS = 2000;     // preview 2 seconds
+const REPREVIEW_MS = 2000;   // preview again button: 2 seconds
 
-function tileImageStyle(tileIdx: number, size: number) {
-  const grid = 3;
-  const x = tileIdx % grid;
-  const y = Math.floor(tileIdx / grid);
+type GameLevelState = {
+  size: number;
+  // solutionImages[slotIndex] => image url that belongs there
+  solutionImages: string[];
+  // trayImages is shuffled set of images the user can pick from (same set as solutionImages)
+  trayImages: string[];
+  // placedImages[slotIndex] => image url placed, or null
+  placedImages: (string | null)[];
+  selectedImage: string | null;
+};
+
+function buildLevelState(size: number): GameLevelState {
+  const total = size * size;
+
+  // Use as many unique images as possible, repeat if not enough for 5x5.
+  // (If you want “no repeats ever”, you MUST provide >=25 images for 5x5.)
+  const base = shuffle(IMAGE_POOL);
+  const solution: string[] = [];
+  for (let i = 0; i < total; i++) solution.push(base[i % base.length]);
+
+  const tray = shuffle(solution);
 
   return {
-    width: size * grid,
-    height: size * grid,
-    objectFit: "cover" as const,
-    transform: `translate(${-x * size}px, ${-y * size}px)`,
-    userSelect: "none" as const,
-    pointerEvents: "none" as const,
+    size,
+    solutionImages: solution,
+    trayImages: tray,
+    placedImages: Array(total).fill(null),
+    selectedImage: null,
   };
 }
+
+const imgCover: React.CSSProperties = {
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  display: "block",
+  userSelect: "none",
+  pointerEvents: "none",
+};
 
 const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
   const { lang, t } = useLang();
 
-  const [puzzleIdx, setPuzzleIdx] = useState(0);
-  const [state, setState] = useState<PuzzleState>(() => initPuzzle(PUZZLES[0]));
-  const [score, setScore] = useState(0);
+  const [levelIndex, setLevelIndex] = useState(0);
+  const level = LEVELS[levelIndex];
+
+  const [state, setState] = useState<GameLevelState>(() => buildLevelState(level.size));
+  const [score, setScore] = useState(0); // levels completed
   const [power, setPower] = useState(0);
   const [gameOver, setGameOver] = useState(false);
 
@@ -102,7 +109,15 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
   const [correctFlash, setCorrectFlash] = useState<number | null>(null);
 
   const dinobot = DINOBOTS[5];
-  const TOTAL_PUZZLES = PUZZLES.length;
+
+  // Reset state when levelIndex changes
+  useEffect(() => {
+    const s = buildLevelState(LEVELS[levelIndex].size);
+    setState(s);
+    setShowPreview(true);
+    setElapsed(0);
+    setStartTime(Date.now());
+  }, [levelIndex]);
 
   // Timer
   useEffect(() => {
@@ -111,75 +126,81 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
     return () => clearInterval(id);
   }, [gameOver, showPreview, startTime]);
 
-  // Hide preview after 2.5s
+  // Hide preview after 2s
   useEffect(() => {
     if (!showPreview) return;
     const id = setTimeout(() => {
       setShowPreview(false);
       setStartTime(Date.now());
-    }, 2500);
+    }, PREVIEW_MS);
     return () => clearTimeout(id);
   }, [showPreview]);
 
-  const selectTile = useCallback((tileIdx: number) => {
-    setState((s) => ({ ...s, selectedTile: s.selectedTile === tileIdx ? null : tileIdx }));
+  const totalSlots = state.size * state.size;
+  const solvedCount = state.placedImages.filter(Boolean).length;
+
+  const isLevelComplete = useMemo(() => {
+    if (state.placedImages.some((x) => x === null)) return false;
+    // Must match exactly each slot
+    for (let i = 0; i < totalSlots; i++) {
+      if (state.placedImages[i] !== state.solutionImages[i]) return false;
+    }
+    return true;
+  }, [state.placedImages, state.solutionImages, totalSlots]);
+
+  useEffect(() => {
+    if (!isLevelComplete) return;
+
+    setScore((s) => s + 1);
+    setPower((p) => Math.min(100, p + 25));
+
+    const id = setTimeout(() => {
+      if (levelIndex >= LEVELS.length - 1) {
+        setGameOver(true);
+      } else {
+        setLevelIndex((i) => i + 1);
+      }
+    }, 600);
+
+    return () => clearTimeout(id);
+  }, [isLevelComplete, levelIndex]);
+
+  const selectImage = useCallback((img: string) => {
+    setState((s) => ({ ...s, selectedImage: s.selectedImage === img ? null : img }));
   }, []);
 
-  const placeInSlot = useCallback(
-    (slotIdx: number) => {
-      setState((s) => {
-        if (s.selectedTile === null) return s;
-        if (s.slots[slotIdx] !== null) return s;
+  const placeInSlot = useCallback((slotIdx: number) => {
+    setState((s) => {
+      if (!s.selectedImage) return s;
+      if (s.placedImages[slotIdx] !== null) return s;
 
-        const tileIdx = s.selectedTile;
-        const isCorrect = tileIdx === slotIdx;
+      const img = s.selectedImage;
+      const isCorrect = img === s.solutionImages[slotIdx];
 
-        const newSlots = [...s.slots];
-        newSlots[slotIdx] = tileIdx;
+      if (!isCorrect) {
+        setWrongFlash(slotIdx);
+        window.setTimeout(() => setWrongFlash(null), 450);
+        return { ...s, selectedImage: null };
+      }
 
-        const newRemaining = s.remaining.filter((i) => i !== tileIdx);
+      const placed = [...s.placedImages];
+      placed[slotIdx] = img;
 
-        if (isCorrect) {
-          setCorrectFlash(slotIdx);
-          setTimeout(() => setCorrectFlash(null), 600);
-          setPower((p) => Math.min(100, p + 6));
-        } else {
-          setWrongFlash(slotIdx);
-          setTimeout(() => {
-            setWrongFlash(null);
-            setState((ss) => {
-              const revert = [...ss.slots];
-              revert[slotIdx] = null;
-              return { ...ss, slots: revert, remaining: [...ss.remaining, tileIdx], selectedTile: null };
-            });
-          }, 700);
-          return { ...s, slots: newSlots, selectedTile: null };
-        }
+      const tray = s.trayImages.filter((x) => x !== img);
 
-        const allFilled = newSlots.every((v) => v !== null);
-        if (allFilled) {
-          const allCorrect = newSlots.every((v, i) => v === i);
-          if (allCorrect) {
-            setScore((sc) => sc + 1);
-            setTimeout(() => {
-              const nextIdx = puzzleIdx + 1;
-              if (nextIdx >= TOTAL_PUZZLES) {
-                setGameOver(true);
-              } else {
-                setPuzzleIdx(nextIdx);
-                setState(initPuzzle(PUZZLES[nextIdx]));
-                setShowPreview(true);
-                setElapsed(0);
-              }
-            }, 800);
-          }
-        }
+      setCorrectFlash(slotIdx);
+      window.setTimeout(() => setCorrectFlash(null), 450);
+      setPower((p) => Math.min(100, p + 4));
 
-        return { ...s, slots: newSlots, remaining: newRemaining, selectedTile: null };
-      });
-    },
-    [puzzleIdx, TOTAL_PUZZLES]
-  );
+      return { ...s, placedImages: placed, trayImages: tray, selectedImage: null };
+    });
+  }, []);
+
+  const onShowPreviewAgain = () => {
+    if (showPreview) return;
+    setShowPreview(true);
+    window.setTimeout(() => setShowPreview(false), REPREVIEW_MS);
+  };
 
   const stars = score >= 3 ? 3 : score >= 2 ? 2 : 1;
 
@@ -189,29 +210,27 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
         stars={stars}
         dinobot={dinobot}
         powerLevel={power}
-        detail={`${t.puzzle.result} ${score}/${TOTAL_PUZZLES}`}
+        detail={`${t.puzzle.result} ${score}/${LEVELS.length}`}
         onBack={onBack}
         onClaim={() => onComplete(stars)}
       />
     );
   }
 
-  const { puzzle, slots, remaining, selectedTile } = state;
-  const puzzleName = lang === "de" ? puzzle.nameDE : puzzle.nameBS;
-  const solved = slots.filter((v) => v !== null).length;
-
-  const TILE = 76;
+  // UI sizes
+  const TILE = state.size === 3 ? 92 : state.size === 4 ? 78 : 64;
+  const bankTile = 70;
 
   return (
     <div className="screen" style={{ gap: 16, justifyContent: "flex-start", paddingTop: 20 }}>
       {/* Top bar */}
-      <div style={{ display: "flex", justifyContent: "space-between", width: "100%", maxWidth: 600, alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", width: "100%", maxWidth: 680, alignItems: "center" }}>
         <button className="btn btn-muted" style={{ padding: "8px 16px", fontSize: "0.9rem" }} onClick={onBack}>
           {t.back}
         </button>
 
         <div style={{ fontFamily: "Fredoka One,cursive", fontSize: "1.1rem", color: "#ffe66d" }}>
-          {puzzleIdx + 1}/{TOTAL_PUZZLES}
+          {levelIndex + 1}/{LEVELS.length} • {state.size}×{state.size}
         </div>
 
         <div style={{ fontSize: "0.95rem", color: "#7a8fa6" }}>{elapsed}s</div>
@@ -219,94 +238,97 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
 
       <DinoBot {...dinobot} powerLevel={power} size={70} animate={false} />
 
-      {/* Preview overlay */}
+      {/* Preview overlay (shows the SOLUTION board) */}
       {showPreview && (
         <div
           style={{
             position: "fixed",
             inset: 0,
             zIndex: 100,
-            background: "rgba(0,0,0,0.85)",
+            background: "rgba(0,0,0,0.88)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: 20,
+            gap: 16,
             padding: 18,
           }}
         >
           <div style={{ fontFamily: "Fredoka One,cursive", fontSize: "1.5rem", color: "#ffe66d", textAlign: "center" }}>
-            {t.puzzle.preview}: {puzzleName}
+            {lang === "de" ? "Merke dir die Plätze!" : "Zapamti mjesta!"}
           </div>
 
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
+              gridTemplateColumns: `repeat(${state.size}, ${TILE}px)`,
               gap: 6,
-              background: puzzle.bgColor,
-              padding: 16,
+              padding: 14,
               borderRadius: 20,
-              border: `4px solid ${puzzle.borderColor}`,
+              border: "4px solid rgba(255,230,109,0.55)",
+              background: "rgba(255,255,255,0.04)",
             }}
           >
-            {Array.from({ length: 9 }, (_, tileIdx) => (
+            {state.solutionImages.map((img, idx) => (
               <div
-                key={tileIdx}
+                key={idx}
                 style={{
                   width: TILE,
                   height: TILE,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   overflow: "hidden",
-                  background: "rgba(255,255,255,0.06)",
-                  border: `2px solid ${puzzle.borderColor}44`,
+                  border: "2px solid rgba(255,255,255,0.12)",
+                  background: "rgba(0,0,0,0.18)",
                 }}
               >
-                <img src={puzzle.image} alt="preview" style={tileImageStyle(tileIdx, TILE)} draggable={false} />
+                <img src={img} alt="" style={imgCover} draggable={false} />
               </div>
             ))}
           </div>
 
-          <div style={{ color: "#7a8fa6", fontSize: "0.9rem" }} className="pulse">
-            Merke dir das Bild! / Zapamti sliku!
+          <div style={{ color: "#7a8fa6", fontSize: "0.95rem" }} className="pulse">
+            {lang === "de" ? "2 Sekunden…" : "2 sekunde…"}
           </div>
         </div>
       )}
 
-      {/* Main puzzle area */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, width: "100%", maxWidth: 600 }}>
-        <div style={{ fontFamily: "Fredoka One,cursive", fontSize: "1.2rem", color: puzzle.borderColor }}>
-          {t.puzzle.title} — {puzzleName}
-        </div>
-        <p style={{ color: "#7a8fa6", fontSize: "0.85rem", textAlign: "center" }}>{t.puzzle.hint}</p>
+      {/* Main */}
+      <div style={{ width: "100%", maxWidth: 680, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+        <button
+          className="btn btn-muted"
+          onClick={onShowPreviewAgain}
+          disabled={showPreview}
+          style={{ padding: "10px 16px", fontSize: "0.95rem", opacity: showPreview ? 0.6 : 1 }}
+        >
+          {lang === "de" ? "Vorschau zeigen" : "Pokaži pregled"}
+        </button>
 
         {/* Progress */}
-        <div style={{ width: "100%", maxWidth: 400 }}>
-          <div style={{ fontSize: "0.8rem", color: "#7a8fa6", marginBottom: 4 }}>
-            {solved}/9 {lang === "de" ? "Teile platziert" : "dijelova postavljeno"}
+        <div style={{ width: "100%", maxWidth: 420 }}>
+          <div style={{ fontSize: "0.85rem", color: "#7a8fa6", marginBottom: 4 }}>
+            {solvedCount}/{totalSlots} {lang === "de" ? "platziert" : "postavljeno"}
           </div>
           <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${(solved / 9) * 100}%` }} />
+            <div className="progress-fill" style={{ width: `${(solvedCount / totalSlots) * 100}%` }} />
           </div>
         </div>
 
-        {/* Grid (drop zone) */}
+        {/* Board */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 6,
-            background: puzzle.bgColor,
+            gridTemplateColumns: `repeat(${state.size}, ${TILE}px)`,
+            gap: 8,
             padding: 14,
             borderRadius: 20,
-            border: `4px solid ${puzzle.borderColor}`,
-            boxShadow: `0 0 24px ${puzzle.borderColor}55`,
+            border: "4px solid rgba(78,205,196,0.45)",
+            background: "rgba(255,255,255,0.04)",
           }}
         >
-          {slots.map((tileIdx, slotIdx) => {
+          {state.placedImages.map((img, slotIdx) => {
+            const filled = img !== null;
             const isCorrect = correctFlash === slotIdx;
             const isWrong = wrongFlash === slotIdx;
-            const filled = tileIdx !== null;
 
             return (
               <button
@@ -319,18 +341,16 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
                   height: TILE,
                   borderRadius: 14,
                   padding: 6,
-                  background: isCorrect ? "#22c55e44" : isWrong ? "#ef444444" : filled ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.04)",
-                  border: `3px solid ${isCorrect ? "#22c55e" : isWrong ? "#ef4444" : filled ? `${puzzle.borderColor}88` : `${puzzle.borderColor}33`}`,
-                  cursor: filled ? "default" : "pointer",
-                  display: "grid",
-                  placeItems: "center",
-                  transition: "all 0.2s",
-                  boxShadow: isCorrect ? "0 0 16px #22c55e" : isWrong ? "0 0 16px #ef4444" : "none",
+                  background: isCorrect ? "#22c55e33" : isWrong ? "#ef444433" : filled ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.18)",
+                  border: `3px solid ${
+                    isCorrect ? "#22c55e" : isWrong ? "#ef4444" : filled ? "rgba(255,255,255,0.20)" : "rgba(255,255,255,0.10)"
+                  }`,
                   overflow: "hidden",
+                  cursor: filled ? "default" : "pointer",
                 }}
               >
                 {filled ? (
-                  <img src={puzzle.image} alt="tile" style={tileImageStyle(tileIdx!, TILE - 12)} draggable={false} />
+                  <img src={img!} alt="" style={imgCover} draggable={false} />
                 ) : (
                   <div style={{ width: "100%", height: "100%", borderRadius: 12, border: "2px dashed rgba(255,255,255,0.14)" }} />
                 )}
@@ -339,11 +359,11 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
           })}
         </div>
 
-        {/* Tile bank */}
-        {remaining.length > 0 && (
-          <div style={{ width: "100%", maxWidth: 430 }}>
+        {/* Tile bank (all different images) */}
+        {state.trayImages.length > 0 && (
+          <div style={{ width: "100%", maxWidth: 620 }}>
             <div style={{ fontFamily: "Fredoka One,cursive", fontSize: "1rem", color: "#7a8fa6", marginBottom: 8, textAlign: "center" }}>
-              {t.puzzle.selectPiece}
+              {lang === "de" ? "Wähle ein Bild" : "Izaberi sliku"}
             </div>
 
             <div
@@ -358,38 +378,35 @@ const PuzzleGame: React.FC<Props> = ({ onComplete, onBack }) => {
                 border: "2px solid #2a3a4a",
               }}
             >
-              {remaining.map((tileIdx) => (
-                <button
-                  key={tileIdx}
-                  onClick={() => selectTile(tileIdx)}
-                  style={{
-                    appearance: "none",
-                    WebkitAppearance: "none",
-                    width: 72,
-                    height: 72,
-                    borderRadius: 14,
-                    padding: 6,
-                    background: selectedTile === tileIdx ? `${puzzle.borderColor}22` : "#1e2d3d",
-                    border: `3px solid ${selectedTile === tileIdx ? puzzle.borderColor : "#2a3a4a"}`,
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    transform: selectedTile === tileIdx ? "scale(1.08)" : "scale(1)",
-                    boxShadow: selectedTile === tileIdx ? `0 0 14px ${puzzle.borderColor}` : "none",
-                    overflow: "hidden",
-                    display: "grid",
-                    placeItems: "center",
-                  }}
-                >
-                  <img src={puzzle.image} alt="piece" style={tileImageStyle(tileIdx, 60)} draggable={false} />
-                </button>
-              ))}
+              {state.trayImages.map((img, i) => {
+                const sel = state.selectedImage === img;
+                return (
+                  <button
+                    key={`${img}-${i}`}
+                    onClick={() => selectImage(img)}
+                    style={{
+                      appearance: "none",
+                      WebkitAppearance: "none",
+                      width: bankTile,
+                      height: bankTile,
+                      borderRadius: 14,
+                      padding: 6,
+                      background: sel ? "rgba(255,230,109,0.12)" : "#1e2d3d",
+                      border: `3px solid ${sel ? "#ffe66d" : "#2a3a4a"}`,
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                      transform: sel ? "scale(1.06)" : "scale(1)",
+                      boxShadow: sel ? "0 0 14px rgba(255,230,109,0.55)" : "none",
+                      overflow: "hidden",
+                      display: "grid",
+                      placeItems: "center",
+                    }}
+                  >
+                    <img src={img} alt="" style={imgCover} draggable={false} />
+                  </button>
+                );
+              })}
             </div>
-          </div>
-        )}
-
-        {remaining.length === 0 && solved < 9 && (
-          <div style={{ color: "#ffe66d", fontFamily: "Fredoka One,cursive", fontSize: "1.1rem" }}>
-            {lang === "de" ? "Fast fertig! Korrigiere die Fehler!" : "Skoro gotovo! Ispravi greške!"}
           </div>
         )}
       </div>
