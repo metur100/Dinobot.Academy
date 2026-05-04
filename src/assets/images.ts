@@ -1,4 +1,3 @@
-// src/assets/images.ts
 import { publicUrl } from "./url";
 
 export const IMAGES = {
@@ -21,13 +20,13 @@ export const IMAGES = {
   itemD: publicUrl("images/Grimlock.webp"),
   itemE: publicUrl("images/dinobot1.webp"),
   itemF: publicUrl("images/trex.jpg"),
-
-  // UPDATED: use the new dino.jpeg as one of the pool items
   itemG: publicUrl("images/dino.jpeg"),
-
   itemH: publicUrl("images/trex-volcano.jpg"),
 
-  // NEW extras (optional, but useful so you can reference them cleanly)
+  // NEW
+  dinosaurs: publicUrl("images/dinosaurs.jpg"),
+
+  // NEW extras (optional but useful)
   itemI: publicUrl("images/Miniforce.webp"),
   itemJ: publicUrl("images/transformers.jpg"),
   itemK: publicUrl("images/optimus-grimlock.jpeg"),
@@ -44,6 +43,7 @@ export const IMAGES = {
   confetti: publicUrl("images/bumblebee3.webp"),
 } as const;
 
+// IMPORTANT: 6x6 needs 18 unique images => put 18 different URLs here.
 export const MEMORY_POOL: string[] = [
   IMAGES.itemA,
   IMAGES.itemB,
@@ -53,6 +53,18 @@ export const MEMORY_POOL: string[] = [
   IMAGES.itemF,
   IMAGES.itemG,
   IMAGES.itemH,
+
+  IMAGES.itemI,
+  IMAGES.itemJ,
+  IMAGES.itemK,
+  IMAGES.ufo,
+  IMAGES.dinosaurs,
+
+  publicUrl("images/optimus2.jpg"),
+  publicUrl("images/optimus3.jpg"),
+  publicUrl("images/trex2.jpg"),
+  publicUrl("images/bumblebee2.jpg"),
+  publicUrl("images/bumblebee1.jpg"),
 ];
 
 export const PHOTO_POOL: string[] = [
@@ -61,16 +73,17 @@ export const PHOTO_POOL: string[] = [
   publicUrl("images/optimus-pose.jpg"),
   publicUrl("images/optimus2.jpg"),
   publicUrl("images/optimus3.jpg"),
-  publicUrl("images/optimus-grimlock.jpeg"), // NEW
-  publicUrl("images/transformers.jpg"),      // NEW
-  publicUrl("images/Miniforce.webp"),        // NEW
+  publicUrl("images/optimus-grimlock.jpeg"),
+  publicUrl("images/transformers.jpg"),
+  publicUrl("images/Miniforce.webp"),
   publicUrl("images/Grimlock.webp"),
   publicUrl("images/dinobot1.webp"),
   publicUrl("images/trex.jpg"),
   publicUrl("images/trex2.jpg"),
   publicUrl("images/trex-volcano.jpg"),
-  publicUrl("images/dino.jpeg"),             // NEW
+  publicUrl("images/dino.jpeg"),
   publicUrl("images/bumblebee1.jpg"),
   publicUrl("images/bumblebee2.jpg"),
   publicUrl("images/bumblebee3.webp"),
+  publicUrl("images/dinosaurs.jpg"),
 ];

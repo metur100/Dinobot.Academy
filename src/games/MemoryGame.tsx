@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import GameShell from '../components/GameShell';
-import { MEMORY_POOL } from '../assets/images';
+import React, { useMemo, useState, useEffect } from "react";
+import GameShell from "../components/GameShell";
+import { MEMORY_POOL } from "../assets/images";
 
 type Props = { onComplete: (stars: number, detail: string) => void; onBack: () => void };
 
@@ -13,11 +13,22 @@ function shuffle<T>(arr: T[]) {
   return a;
 }
 
-const ROUNDS_TOTAL = 4;
-const PAIRS_PER_ROUND = 8; // 8 pairs => 16 cards
+// Rounds:
+// 1) 2x2  => 2 pairs (4 cards)
+// 2) 4x4  => 8 pairs (16 cards)
+// 3) 4x4  => 8 pairs (16 cards) but shifted pool so it feels different
+// 4) 6x6  => 18 pairs (36 cards)
+const ROUNDS = [
+  { grid: 2, pairs: 2, poolShift: 0 },
+  { grid: 4, pairs: 8, poolShift: 0 },
+  { grid: 4, pairs: 8, poolShift: 8 },
+  { grid: 6, pairs: 18, poolShift: 0 },
+] as const;
+
+type RoundIndex = 0 | 1 | 2 | 3;
 
 const MemoryGame: React.FC<Props> = ({ onComplete, onBack }) => {
-  const [round, setRound] = useState(1);
+  const [roundIndex, setRoundIndex] = useState<RoundIndex>(0);
 
   const [flipped, setFlipped] = useState<number[]>([]);
   const [matched, setMatched] = useState<number[]>([]);
@@ -26,15 +37,25 @@ const MemoryGame: React.FC<Props> = ({ onComplete, onBack }) => {
   const [roundsWon, setRoundsWon] = useState(0);
   const [totalMoves, setTotalMoves] = useState(0);
 
+  const roundDef = ROUNDS[roundIndex];
+  const grid = roundDef.grid;
+  const pairs = roundDef.pairs;
+
   // build deck for the current round (changes when round changes)
   const cards = useMemo(() => {
+    const poolLen = Math.max(1, MEMORY_POOL.length);
+
     // rotate pool per round so it feels different
-    const start = ((round - 1) * PAIRS_PER_ROUND) % Math.max(1, MEMORY_POOL.length);
+    const start = (roundDef.poolShift + roundIndex * pairs) % poolLen;
     const rotated = [...MEMORY_POOL.slice(start), ...MEMORY_POOL.slice(0, start)];
 
-    const picked = rotated.slice(0, PAIRS_PER_ROUND);
-    return shuffle([...picked, ...picked]); // 16
-  }, [round]);
+    // pick N images for pairs (if not enough images, reuse from rotated)
+    const picked: string[] = [];
+    for (let i = 0; i < pairs; i++) picked.push(rotated[i % rotated.length]);
+
+    // duplicate for pairs then shuffle
+    return shuffle([...picked, ...picked]);
+  }, [roundIndex, roundDef.poolShift, pairs]);
 
   const resetRoundState = () => {
     setFlipped([]);
@@ -51,21 +72,21 @@ const MemoryGame: React.FC<Props> = ({ onComplete, onBack }) => {
     setRoundsWon((w) => w + 1);
     setTotalMoves((tm) => tm + moves);
 
-    const isLast = round >= ROUNDS_TOTAL;
+    const isLast = roundIndex >= ROUNDS.length - 1;
 
-    const t = setTimeout(() => {
+    const t = window.setTimeout(() => {
       if (isLast) {
-        // stars based on total moves across all rounds (tweak as you like)
-        const avg = (totalMoves + moves) / ROUNDS_TOTAL;
-        const stars = avg <= 16 ? 3 : avg <= 22 ? 2 : 1;
-        onComplete(stars, `Rounds: ${ROUNDS_TOTAL}/${ROUNDS_TOTAL}, Total moves: ${totalMoves + moves}`);
+        // stars based on average moves across all rounds
+        const avg = (totalMoves + moves) / ROUNDS.length;
+        const stars = avg <= 10 ? 3 : avg <= 16 ? 2 : 1;
+        onComplete(stars, `Rounds: ${ROUNDS.length}/${ROUNDS.length}, Total moves: ${totalMoves + moves}`);
       } else {
-        setRound((r) => r + 1);
+        setRoundIndex((ri) => (ri + 1) as RoundIndex);
         resetRoundState();
       }
     }, 650);
 
-    return () => clearTimeout(t);
+    return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matched.length, cards.length]);
 
@@ -82,30 +103,25 @@ const MemoryGame: React.FC<Props> = ({ onComplete, onBack }) => {
 
       if (cards[a] === cards[b]) {
         setMatched((mm) => [...mm, a, b]);
-        setTimeout(() => setFlipped([]), 260);
+        window.setTimeout(() => setFlipped([]), 260);
       } else {
-        setTimeout(() => setFlipped([]), 700);
+        window.setTimeout(() => setFlipped([]), 700);
       }
     }
   };
 
   return (
-    <GameShell
-      onBack={onBack}
-      current={round}
-      total={ROUNDS_TOTAL}
-      score={roundsWon}
-    >
-      <div style={{ width: '100%', maxWidth: 1100, margin: '0 auto', padding: '0 14px 40px' }}>
-        <div style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 14 }}>
-          Moves: {moves}
+    <GameShell onBack={onBack} current={roundIndex + 1} total={ROUNDS.length} score={roundsWon}>
+      <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", padding: "0 14px 40px" }}>
+        <div style={{ fontSize: "1.25rem", fontWeight: 800, marginBottom: 14 }}>
+          Moves: {moves} • {grid}×{grid}
         </div>
 
         <div
           className="memoryGrid"
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+            display: "grid",
+            gridTemplateColumns: `repeat(${grid}, minmax(0, 1fr))`,
             gap: 16,
           }}
         >
@@ -114,7 +130,7 @@ const MemoryGame: React.FC<Props> = ({ onComplete, onBack }) => {
 
             return (
               <button
-                key={`${round}-${idx}`}
+                key={`${roundIndex}-${idx}`}
                 type="button"
                 onClick={() => handleFlip(idx)}
                 className="memoryCard"
