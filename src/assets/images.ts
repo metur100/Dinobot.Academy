@@ -11,7 +11,24 @@ export const IMAGES = {
   counting: publicUrl("images/bumblebee2.jpg"),
   patterns: publicUrl("images/optimus2.jpg"),
   photoPuzzle: publicUrl("images/optimus3.jpg"),
+
+  // Keep your runner icon (home screen). If you want: replace with optimusTop later.
   runner: publicUrl("images/optimus-fortnite.jpg"),
+
+  // -------------------------
+  // NEW: Top-view vehicle icons (your drawings)
+  // NOTE: from screenshot these are in public/ root:
+  optimusTop: publicUrl("images/optimus-top.png"),
+  bumblebeeTop: publicUrl("images/bumblebee-top.png"),
+  // If you placed them under public/images/, use instead:
+  // optimusTop: publicUrl("images/optimus-top.png"),
+  // bumblebeeTop: publicUrl("images/bumblebee-top.png"),
+
+  // NEW (optional but useful for top-view driving game)
+  // Provide these files if you have them; game can also render without them.
+  roadObstacle: publicUrl("images/obstacle.png"),
+  nitroPickup: publicUrl("images/nitro.png"),
+  goal: publicUrl("images/goal.png"),
 
   // Pattern / memory pool icons
   itemA: publicUrl("images/optimus-face.jpg"),
@@ -31,7 +48,7 @@ export const IMAGES = {
   itemJ: publicUrl("images/transformers.jpg"),
   itemK: publicUrl("images/optimus-grimlock.jpeg"),
 
-  // Runner sprites
+  // Runner sprites (legacy runner)
   optimusRun: publicUrl("images/optimus-pose.jpg"),
   optimusJump: publicUrl("images/optimus-fortnite.jpg"),
   optimusShoot: publicUrl("images/optimus-face.jpg"),

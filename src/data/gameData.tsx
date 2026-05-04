@@ -32,7 +32,7 @@ export const MISSIONS: Mission[] = [
   { id: "counting", icon: "🔢", image: publicUrl("images/trex-volcano.jpg"), color: "#0ea5e9", game: "counting", stars: 0, unlocked: true },
   { id: "patterns", icon: "🔁", image: publicUrl("images/optimus-pose.jpg"), color: "#d97706", game: "patterns", stars: 0, unlocked: true },
   { id: "photoPuzzle", icon: "🧩", image: publicUrl("images/Grimlock.webp"), color: "#38bdf8", game: "photoPuzzle", stars: 0, unlocked: true },
-  { id: "runner", icon: "🏃", image: publicUrl("images/optimus-pose.jpg"), color: "#f43f5e", game: "runner", stars: 0, unlocked: true },
+  { id: "runner", icon: "🏃", image: publicUrl("images/optimus-top.png"), color: "#f43f5e", game: "runner", stars: 0, unlocked: true },
 ];
 
 // -------- Letters --------

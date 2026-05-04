@@ -13,6 +13,7 @@ import PatternsGame from './games/PatternsGame'; */
 import PhotoPuzzleGame from './games/PhotoPuzzleGame';
 import RunnerGame from './games/RunnerGame';
 import { sounds } from "./audio/sound";
+import StarRating from './components/StarRating';
 
 const STORAGE_KEY = 'dinobot-stars-v2';
 const load = (): Record<string, number> => {
@@ -77,7 +78,10 @@ const Inner: React.FC = () => {
           <div className="pop" style={{ textAlign:'center' }}>
             <div style={{ height: 12 }} />
             <h2 style={{ fontFamily:'Fredoka One,cursive', fontSize:'2.8rem', background:'linear-gradient(135deg,#ff6b35,#ffe66d)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>{t.claimStars}</h2>
-            <div style={{ fontSize:'2.2rem', marginTop:10 }}>⭐⭐⭐</div>
+<div style={{ marginTop: 10, display:'flex', justifyContent:'center' }}>
+  <StarRating stars={3} />
+</div>
+
           </div>
         </div>
       )}
