@@ -10,7 +10,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>
 );
 
-// Global tap/click sound + start background tone after first gesture
 let started = false;
 window.addEventListener(
   'pointerdown',
