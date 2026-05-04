@@ -11,10 +11,7 @@ type Pickup = { id: string; lane: number; y: number; kind: "nitro" };
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 const randId = () => String(Math.random()).slice(2);
 
-function rectsOverlap(
-  a: { x: number; y: number; w: number; h: number },
-  b: { x: number; y: number; w: number; h: number }
-) {
+function rectsOverlap(a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
@@ -55,17 +52,24 @@ const RunnerGame: React.FC<Props> = ({ onComplete, onBack }) => {
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
   const [pickups, setPickups] = useState<Pickup[]>([]);
 
-  // --- NEW: star system (3 stars by score thresholds)
-  // Set your thresholds here (distance points).
-  const STAR_THRESHOLDS = [600, 1400, 2400]; // 1★ at 600, 2★ at 1400, 3★ at 2400
-  const [bestStars, setBestStars] = useState(0); // persists while user stays in this game screen
-  const [showStarHint, setShowStarHint] = useState(false);
-  const hintCooldownRef = useRef(false); // so popup doesn't spam repeatedly
-
   const obstaclesRef = useRef<Obstacle[]>([]);
   const pickupsRef = useRef<Pickup[]>([]);
   useEffect(() => void (obstaclesRef.current = obstacles), [obstacles]);
   useEffect(() => void (pickupsRef.current = pickups), [pickups]);
+
+  // Stars
+  const STAR_THRESHOLDS = [600, 1400, 2400];
+  const starsFromScore = (d: number) => (d >= STAR_THRESHOLDS[2] ? 3 : d >= STAR_THRESHOLDS[1] ? 2 : d >= STAR_THRESHOLDS[0] ? 1 : 0);
+
+  const [bestStars, setBestStars] = useState(0);
+
+  // Hint popup only AFTER crash, and only until 3★
+  const [showStarHint, setShowStarHint] = useState(false);
+  const shownHintThisCrashRef = useRef(false);
+
+  // Banner once at 3★
+  const [showStarsUnlocked, setShowStarsUnlocked] = useState(false);
+  const bannerShownRef = useRef(false);
 
   const raf = useRef<number | null>(null);
 
@@ -78,16 +82,11 @@ const RunnerGame: React.FC<Props> = ({ onComplete, onBack }) => {
     speed: 4.0,
   });
 
-  // images (keep publicUrl so paths don't break)
+  // images (WORKING PATHS)
   const optimusImg = publicUrl("images/optimus-top.png");
   const bumbleImg = publicUrl("images/bumblebee-top.png");
-
   const obstacleImg = publicUrl("images/obstacle.png");
   const nitroImg = publicUrl("images/nitro.png");
-
-  // OPTIONAL: if you have a star image in public/images, use it in the hint UI.
-  // If file doesn't exist, we gracefully hide it with onError.
-  const starImg = publicUrl("images/star.png");
 
   const carImg = choice === "bumblebee" ? bumbleImg : optimusImg;
 
@@ -125,7 +124,6 @@ const RunnerGame: React.FC<Props> = ({ onComplete, onBack }) => {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!running) return;
       if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") {
         e.preventDefault();
         moveLeft();
@@ -134,7 +132,6 @@ const RunnerGame: React.FC<Props> = ({ onComplete, onBack }) => {
         e.preventDefault();
         moveRight();
       }
-      // NEW: quick restart key
       if (e.key.toLowerCase() === "r") {
         e.preventDefault();
         restart();
@@ -164,14 +161,6 @@ const RunnerGame: React.FC<Props> = ({ onComplete, onBack }) => {
     setPickups((prev) => [...prev, { id: randId(), lane, y: -PICK_H - 26, kind: "nitro" }]);
   };
 
-  const computeStarsFromDistance = (d: number) => {
-    let s = 0;
-    if (d >= STAR_THRESHOLDS[0]) s = 1;
-    if (d >= STAR_THRESHOLDS[1]) s = 2;
-    if (d >= STAR_THRESHOLDS[2]) s = 3;
-    return s;
-  };
-
   const startGame = (c: CarChoice) => {
     setChoice(c);
     setRunning(true);
@@ -182,13 +171,13 @@ const RunnerGame: React.FC<Props> = ({ onComplete, onBack }) => {
     setPickups([]);
     setShowStarHint(false);
 
+    shownHintThisCrashRef.current = false;
+
     const now = performance.now();
     sRef.current.targetLane = 1;
     sRef.current.laneLerp = 1;
     sRef.current.lastSpawnObs = now - 9999;
     sRef.current.lastSpawnNitro = now - 9999;
-
-    hintCooldownRef.current = false;
 
     window.setTimeout(() => spawnObstacle(), 50);
     window.setTimeout(() => spawnObstacle(), 500);
@@ -200,39 +189,34 @@ const RunnerGame: React.FC<Props> = ({ onComplete, onBack }) => {
     startGame(choice);
   };
 
-  // NEW: endFail now triggers “collect stars” hint ONLY if bestStars < 3, and only once until next run/restart.
   const endFail = () => {
     setHit(true);
     setRunning(false);
 
-    const achievedThisRun = computeStarsFromDistance(distance);
-    setBestStars((prev) => Math.max(prev, achievedThisRun));
+    const earned = starsFromScore(distance);
+    const nextBest = Math.max(bestStars, earned);
+    if (nextBest !== bestStars) setBestStars(nextBest);
 
-    // show hint if user hasn't reached 3 stars yet
-    window.setTimeout(() => {
-      const nextBest = Math.max(bestStars, achievedThisRun);
-      if (nextBest < 3 && !hintCooldownRef.current) {
-        setShowStarHint(true);
-        hintCooldownRef.current = true;
-      }
-    }, 80);
-
-    // IMPORTANT: do NOT auto-complete mission on fail (unless you want that)
-    // If you still need to report fail to academy, keep it but I'd recommend not “ending the mission” on crash.
-    // onComplete(0, ...) made it look like mission ended every time.
+    // show hint ONLY after crash and only until 3★
+    if (nextBest < 3 && !shownHintThisCrashRef.current) {
+      shownHintThisCrashRef.current = true;
+      setShowStarHint(true);
+    }
   };
 
-  // NEW: you “complete” only when you have 3 stars (once), and then no more popups.
+  // Update bestStars during run + show banner once at 3★
   useEffect(() => {
-    const starsNow = computeStarsFromDistance(distance);
-    if (starsNow > bestStars) setBestStars(starsNow);
+    const nowStars = starsFromScore(distance);
+    if (nowStars > bestStars) setBestStars(nowStars);
 
-    if (starsNow >= 3) {
+    if (nowStars >= 3) {
       setShowStarHint(false);
-      // Call onComplete once when reaching 3 stars (and stop the run)
-      // If you prefer the run to continue even after 3 stars, remove setRunning(false) and the onComplete call.
-      setRunning(false);
-      window.setTimeout(() => onComplete(3, `Score: ${Math.round(distance)}`), 200);
+
+      if (!bannerShownRef.current) {
+        bannerShownRef.current = true;
+        setShowStarsUnlocked(true);
+        window.setTimeout(() => setShowStarsUnlocked(false), 1400);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [distance]);
@@ -311,28 +295,17 @@ const RunnerGame: React.FC<Props> = ({ onComplete, onBack }) => {
     };
   }, []);
 
-  const starsThisRun = computeStarsFromDistance(distance);
-  const starsShown = Math.max(bestStars, starsThisRun);
-
-  // GameShell needs a "total" value; since runner is infinite, we pass total=current so it shows "score / score"
   const scoreNow = Math.round(distance);
 
   return (
-    <GameShell current={scoreNow} total={scoreNow} score={scoreNow} onBack={onBack}>
+  <GameShell
+    current={scoreNow}
+    total={2400}
+    score={0}
+    onBack={onBack}
+  >
       <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
-          <div style={{ fontWeight: 1000, fontSize: "1.1rem" }}>
-            Score: {scoreNow}{" "}
-            <span style={{ opacity: 0.7, fontWeight: 900, marginLeft: 10 }}>
-              Stars: {starsShown}/3
-            </span>
-          </div>
-
-          <div style={{ opacity: 0.85, fontWeight: 900 }}>
-            {choice ? (isMobile ? "Tap LEFT / RIGHT" : "Arrows A/D (R=Restart)") : "Choose your car"}
-          </div>
-
-          {/* RESTART always available after choosing a car */}
           {choice && (
             <button
               onClick={restart}
@@ -364,7 +337,6 @@ const RunnerGame: React.FC<Props> = ({ onComplete, onBack }) => {
               padding: 18,
             }}
           >
-            <div style={{ fontWeight: 1000, fontSize: "1.35rem", marginBottom: 12 }}>Choose your car</div>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
               <button
                 onClick={() => startGame("optimus")}
@@ -382,7 +354,7 @@ const RunnerGame: React.FC<Props> = ({ onComplete, onBack }) => {
                 }}
               >
                 <img src={optimusImg} alt="Optimus" style={{ width: 92, height: 92, objectFit: "contain" }} draggable={false} />
-                Optimus (Truck)
+                Optimus Prime
               </button>
 
               <button
@@ -409,53 +381,6 @@ const RunnerGame: React.FC<Props> = ({ onComplete, onBack }) => {
 
         {choice && (
           <>
-            {/* NEW: "collect stars" popup - only while bestStars < 3 */}
-            {showStarHint && starsShown < 3 && (
-              <div
-                style={{
-                  maxWidth: STAGE_W,
-                  margin: "0 auto 12px auto",
-                  borderRadius: 18,
-                  border: "2px solid rgba(255,230,109,0.35)",
-                  background: "linear-gradient(180deg, rgba(255,230,109,0.18), rgba(255,255,255,0.06))",
-                  padding: 14,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  boxShadow: "0 14px 30px rgba(0,0,0,0.35)",
-                }}
-              >
-                <img
-                  src={starImg}
-                  alt="stars"
-                  style={{ width: 44, height: 44, objectFit: "contain" }}
-                  draggable={false}
-                  onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 1100, fontSize: "1.15rem" }}>Collect the stars!</div>
-                  <div style={{ opacity: 0.85, fontWeight: 900 }}>
-                    Reach score: {STAR_THRESHOLDS.map((x) => Math.round(x)).join(" / ")} to get 3 stars.
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setShowStarHint(false)}
-                  style={{
-                    height: 46,
-                    borderRadius: 14,
-                    padding: "0 14px",
-                    fontWeight: 1000,
-                    border: "2px solid rgba(255,255,255,0.14)",
-                    background: "rgba(0,0,0,0.18)",
-                    color: "white",
-                  }}
-                >
-                  OK
-                </button>
-              </div>
-            )}
-
             <div
               style={{
                 width: "100%",
@@ -644,9 +569,6 @@ const RunnerGame: React.FC<Props> = ({ onComplete, onBack }) => {
               </button>
             </div>
 
-            <div style={{ opacity: 0.75, fontSize: "0.98rem", textAlign: "center", marginTop: 6 }}>
-              Tip: Avoid obstacles. Collect NITRO for speed.
-            </div>
           </>
         )}
       </div>
